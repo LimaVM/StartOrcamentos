@@ -134,6 +134,12 @@ const valorDescontoGroup = document.getElementById("valor-desconto-group");
 const valorDescontoInput = document.getElementById("valor-desconto");
 const valorDescontoHelper = document.getElementById("valor-desconto-helper");
 const templatesLista = document.getElementById("templates-lista");
+const formaPagamentoSelect = document.getElementById("forma-pagamento");
+const avistaGrupo = document.getElementById("avista-grupo");
+const avistaTipoSelect = document.getElementById("avista-tipo");
+const prazoGrupo = document.getElementById("prazo-grupo");
+const prazoParcelasInput = document.getElementById("prazo-parcelas");
+const prazoJurosInput = document.getElementById("prazo-juros");
 
 function validarClienteNome(marcar = true) {
   const grupo = clienteNome.closest(".form-group");
@@ -681,6 +687,17 @@ function initOrcamentoModal() {
   }
   addProdutosBtn.addEventListener("click", abrirModalSelecionarProdutos);
 
+  formaPagamentoSelect.addEventListener("change", () => {
+    const fp = formaPagamentoSelect.value;
+    if (fp === "avista") {
+      avistaGrupo.style.display = "block";
+      prazoGrupo.style.display = "none";
+    } else {
+      avistaGrupo.style.display = "none";
+      prazoGrupo.style.display = "block";
+    }
+  });
+
   tipoDescontoSelect.addEventListener("change", () => {
     const tipo = tipoDescontoSelect.value;
     if (tipo === "nenhum") {
@@ -750,6 +767,10 @@ function initOrcamentoModal() {
         observacoes: orcamentoObservacoes.value,
         tipoDesconto: tipoDescontoSelect.value === "nenhum" ? null : tipoDescontoSelect.value,
         valorDesconto: valorDescontoInput.value || 0,
+        formaPagamento: formaPagamentoSelect.value,
+        avistaTipo: avistaTipoSelect.value,
+        parcelas: parseInt(prazoParcelasInput.value, 10) || 1,
+        jurosMes: parseFloat(prazoJurosInput.value) || 0,
       };
 
       const orcId = orcamentoIdInput.value;
@@ -1178,6 +1199,12 @@ function abrirModalOrcamento() {
   valorDescontoGroup.style.display = "none";
   valorDescontoInput.value = "";
   valorDescontoInput.required = false;
+  formaPagamentoSelect.value = "avista";
+  avistaGrupo.style.display = "block";
+  prazoGrupo.style.display = "none";
+  avistaTipoSelect.value = "dinheiro";
+  prazoParcelasInput.value = 1;
+  prazoJurosInput.value = 0;
   orcamentoIdInput.value = "";
   clienteCpf.value = "";
   clienteCep.value = "";
@@ -1205,6 +1232,19 @@ async function abrirModalEditarOrcamento(id) {
     clienteEmail.value = orc.emailCliente || "";
     clienteCpf.value = orc.cpfCliente || "";
     orcamentoObservacoes.value = orc.observacoes || "";
+    formaPagamentoSelect.value = orc.formaPagamento || "avista";
+    if (formaPagamentoSelect.value === "avista") {
+      avistaGrupo.style.display = "block";
+      prazoGrupo.style.display = "none";
+      avistaTipoSelect.value = orc.avistaTipo || "dinheiro";
+      prazoParcelasInput.value = 1;
+      prazoJurosInput.value = 0;
+    } else {
+      avistaGrupo.style.display = "none";
+      prazoGrupo.style.display = "block";
+      prazoParcelasInput.value = orc.parcelas || 1;
+      prazoJurosInput.value = orc.jurosMes || 0;
+    }
     tipoDescontoSelect.value = orc.tipoDesconto || "nenhum";
     if (orc.tipoDesconto && orc.valorDescontoInput) {
       valorDescontoInput.value = orc.valorDescontoInput;

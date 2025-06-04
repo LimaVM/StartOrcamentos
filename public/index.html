@@ -421,6 +421,7 @@
           <div class="form-tabs">
             <button type="button" class="tab-btn active" data-tab="cliente">Cliente</button>
             <button type="button" class="tab-btn" data-tab="produtos">Produtos</button>
+            <button type="button" class="tab-btn" data-tab="pagamento">Pagamento</button>
             <button type="button" class="tab-btn" data-tab="desconto">Desconto</button>
             <button type="button" class="tab-btn" data-tab="template">Template</button>
           </div>
@@ -477,6 +478,34 @@
               <label for="orcamento-observacoes">Observações</label>
               <textarea id="orcamento-observacoes" rows="3"></textarea>
               <span class="helper-text">Adicione observações ou condições especiais para este orçamento</span>
+            </div>
+          </div>
+
+          <!-- Tab Pagamento -->
+          <div class="tab-content" id="tab-pagamento" style="display: none;">
+            <div class="form-group">
+              <label for="forma-pagamento">Forma de Pagamento</label>
+              <select id="forma-pagamento" name="forma-pagamento">
+                <option value="avista" selected>À vista</option>
+                <option value="prazo">A prazo</option>
+              </select>
+            </div>
+            <div class="form-group" id="avista-grupo">
+              <label for="avista-tipo">Tipo</label>
+              <select id="avista-tipo">
+                <option value="dinheiro">Dinheiro</option>
+                <option value="cartao">Cartão</option>
+              </select>
+            </div>
+            <div id="prazo-grupo" style="display: none;">
+              <div class="form-group">
+                <label for="prazo-parcelas">Parcelas</label>
+                <input type="number" id="prazo-parcelas" min="1" value="1">
+              </div>
+              <div class="form-group">
+                <label for="prazo-juros">Juros ao mês (%)</label>
+                <input type="number" id="prazo-juros" min="0" step="0.01" value="0">
+              </div>
             </div>
           </div>
 

@@ -558,6 +558,10 @@ app.post("/api/orcamentos", authRequired, async (req, res, next) => {
       observacoes,
       tipoDesconto,
       valorDesconto,
+      formaPagamento,
+      avistaTipo,
+      parcelas,
+      jurosMes,
     } = req.body;
 
     if (!nomeCliente || !templateId || !produtosInput || !Array.isArray(produtosInput) || produtosInput.length === 0) {
@@ -611,6 +615,18 @@ app.post("/api/orcamentos", authRequired, async (req, res, next) => {
     descontoCalculado = Math.min(descontoCalculado, valorTotalBruto);
     const valorTotalFinal = valorTotalBruto - descontoCalculado;
 
+    const modoPg = formaPagamento === 'prazo' ? 'prazo' : 'avista';
+    const numParcelas = parseInt(parcelas, 10) || 1;
+    const juros = parseFloat(jurosMes) || 0;
+    let valorTotalComJuros = valorTotalFinal;
+    let valorParcela = valorTotalFinal;
+    if (modoPg === 'prazo') {
+      valorTotalComJuros = valorTotalFinal * (1 + (juros / 100) * numParcelas);
+      valorParcela = valorTotalComJuros / numParcelas;
+    }
+
+
+
     const novoOrcamento = {
       id: gerarCodigo(),
       nomeCliente,
@@ -626,6 +642,12 @@ app.post("/api/orcamentos", authRequired, async (req, res, next) => {
       valorDescontoInput: valorDesconto || 0,
       descontoCalculado: descontoCalculado,
       valorTotal: valorTotalFinal,
+      formaPagamento: modoPg,
+      avistaTipo: modoPg === 'avista' ? (avistaTipo || 'dinheiro') : null,
+      parcelas: modoPg === 'prazo' ? numParcelas : 1,
+      jurosMes: modoPg === 'prazo' ? juros : 0,
+      valorTotalComJuros,
+      valorParcela,
       observacoes: observacoes || "",
       dataCriacao: new Date().toISOString(),
       status: "pendente",
@@ -737,6 +759,12 @@ app.put("/api/orcamentos/:id", authRequired, async (req, res, next) => {
       valorDescontoInput: valorDesconto || 0,
       descontoCalculado,
       valorTotal: valorTotalFinal,
+      formaPagamento: modoPg,
+      avistaTipo: modoPg === 'avista' ? (avistaTipo || 'dinheiro') : null,
+      parcelas: modoPg === 'prazo' ? numParcelas : 1,
+      jurosMes: modoPg === 'prazo' ? juros : 0,
+      valorTotalComJuros,
+      valorParcela,
       observacoes: observacoes || "",
       dataAtualizacao: new Date().toISOString(),
     };
@@ -803,6 +831,8 @@ async function renderizarHtmlOrcamento(orcamentoId) {
         valorTotalBrutoFormatado: formatarMoeda(orcamento.valorTotalBruto),
         valorDescontoCalculadoFormatado: formatarMoeda(orcamento.descontoCalculado),
         valorTotalFormatado: formatarMoeda(orcamento.valorTotal),
+        valorTotalComJurosFormatado: formatarMoeda(orcamento.valorTotalComJuros),
+        valorParcelaFormatada: formatarMoeda(orcamento.valorParcela),
         // Formata itens dentro do objeto orcamento para o template
         itens: orcamento.itens.map(item => ({
             ...item,
