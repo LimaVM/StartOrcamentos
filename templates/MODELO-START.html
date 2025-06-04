@@ -126,7 +126,9 @@
 
   <div class="condicoes">
     <p><strong>Subtotal:</strong> <%= orcamento.valorTotalBrutoFormatado %></p>
+    <% if (orcamento.descontoCalculado > 0) { %>
     <p><strong>Desconto:</strong> <%= orcamento.valorDescontoCalculadoFormatado %></p>
+    <% } %>
     <hr>
     <p class="total-final">Total Final: <%= orcamento.valorTotalFormatado %></p>
 
