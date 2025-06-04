@@ -30,6 +30,7 @@ const menuItems = document.querySelectorAll(".menu-items li");
 const bottomNavItems = document.querySelectorAll(".bottom-nav-item");
 const pages = document.querySelectorAll(".page");
 const toast = document.getElementById("toast");
+const toastMessage = document.getElementById("toast-message");
 const loadingSpinner = document.getElementById("loading-spinner");
 const pdfProgressOverlay = document.getElementById("pdf-progress-overlay");
 const pdfProgressBar = document.getElementById("pdf-progress-bar");
@@ -1139,7 +1140,11 @@ function formatarData(dataString) {
 
 function mostrarToast(mensagem) {
   if (!toast) return;
-  toast.textContent = mensagem;
+  if (toastMessage) {
+    toastMessage.textContent = mensagem;
+  } else {
+    toast.textContent = mensagem;
+  }
   toast.classList.add("show");
   setTimeout(() => toast.classList.remove("show"), 3000);
 }

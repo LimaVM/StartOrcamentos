@@ -40,6 +40,10 @@
   --background-tertiary: #f3f4f6;
   --border-color: #e5e7eb;
   --border-light: #f3f4f6;
+
+  /* Toast */
+  --toast-bg: var(--text-color);
+  --toast-text: #ffffff;
   
   /* Sombras */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -89,6 +93,8 @@
     --background-tertiary: #374151;
     --border-color: #374151;
     --border-light: #4b5563;
+    --toast-bg: var(--background-tertiary);
+    --toast-text: var(--text-color);
   }
 }
 
@@ -609,6 +615,7 @@ input::placeholder, textarea::placeholder {
 
 .fab .material-icons {
   font-size: 24px;
+  vertical-align: middle;
 }
 
 .fab::after {
@@ -817,6 +824,7 @@ input::placeholder, textarea::placeholder {
 .btn .material-icons {
   font-size: 1.25rem;
   margin-right: var(--space-xs);
+  vertical-align: middle;
 }
 
 .btn-primary {
@@ -1214,8 +1222,8 @@ button:disabled,
   bottom: var(--space-lg);
   left: 50%;
   transform: translateX(-50%) translateY(100px);
-  background-color: var(--text-color);
-  color: white;
+  background-color: var(--toast-bg);
+  color: var(--toast-text);
   padding: var(--space-sm) var(--space-lg);
   border-radius: var(--border-radius-full);
   z-index: var(--z-toast);
@@ -1233,6 +1241,7 @@ button:disabled,
 
 .toast .material-icons {
   margin-right: var(--space-sm);
+  color: inherit;
 }
 
 .toast.success {
@@ -1577,6 +1586,7 @@ button:disabled,
   }
   .fab .material-icons {
     font-size: 20px;
+    vertical-align: middle;
   }
 }
 
