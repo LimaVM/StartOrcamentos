@@ -97,12 +97,23 @@ const modalCloseBtns = document.querySelectorAll(".modal-close");
 const modalCancelBtns = document.querySelectorAll(".modal-cancel");
 
 /**
+ * Ajusta o layout quando a largura da tela muda
+ */
+function updateLayout() {
+  if (window.matchMedia("(min-width: 1024px)").matches) {
+    sideMenu.classList.remove("open");
+    overlay.classList.remove("active");
+  }
+}
+
+/**
  * Inicializa o aplicativo quando o DOM estiver carregado
  */
 document.addEventListener("DOMContentLoaded", () => {
   const initial = window.location.hash.replace("#", "") || "home";
   navigateToPage(initial, false);
   history.replaceState({ pageId: initial }, "", `#${initial}`);
+  updateLayout();
   initNavigation();
   initModals();
   initHomePage();
@@ -168,6 +179,8 @@ function initNavigation() {
       navigateToPage(pageId);
     });
   });
+
+  window.addEventListener("resize", updateLayout);
 }
 
 function fecharMenu() {

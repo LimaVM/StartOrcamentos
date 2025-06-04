@@ -1571,3 +1571,25 @@ button:disabled,
   }
 }
 
+
+@media (min-width: 1024px) {
+  .side-menu {
+    left: 0;
+    box-shadow: none;
+  }
+  #menu-toggle,
+  #menu-close,
+  .bottom-nav,
+  #overlay {
+    display: none !important;
+  }
+  .app-header {
+    left: 300px;
+    width: calc(100% - 300px);
+  }
+  #app-content {
+    padding-left: 300px;
+    padding-bottom: var(--space-lg);
+  }
+}
+
