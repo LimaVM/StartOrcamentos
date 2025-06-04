@@ -62,6 +62,14 @@ const usuariosLista = document.getElementById("usuarios-lista");
 // Elementos da página de registros (admin)
 const registrosLista = document.getElementById("registros-lista");
 
+// Elementos da página de perfil
+const perfilForm = document.getElementById("perfil-form");
+const perfilNome = document.getElementById("perfil-nome");
+const perfilSenha = document.getElementById("perfil-senha");
+const perfilFotoInput = document.getElementById("perfil-foto");
+const perfilFotoPreview = document.getElementById("perfil-foto-preview");
+const perfilFotoBtn = document.getElementById("perfil-foto-btn");
+
 // Elementos do modal de usuário
 const usuarioModal = document.getElementById("usuario-modal");
 const usuarioModalTitle = document.getElementById("usuario-modal-title");
@@ -70,6 +78,7 @@ const usuarioId = document.getElementById("usuario-id");
 const usuarioNome = document.getElementById("usuario-nome");
 const usuarioSenha = document.getElementById("usuario-senha");
 const usuarioAdmin = document.getElementById("usuario-admin");
+const usuarioFoto = document.getElementById("usuario-foto");
 
 // Elementos do modal de produto
 const produtoModal = document.getElementById("produto-modal");
@@ -194,6 +203,7 @@ function iniciarAplicacao() {
   initProdutosPage();
   initOrcamentosPage();
   initUsuariosPage();
+  initPerfilPage();
   carregarDadosIniciais();
   initInstallPrompt();
 
@@ -286,6 +296,7 @@ function navigateToPage(pageId, push = true) {
     if (pageId === 'usuarios') carregarUsuarios();
     if (pageId === 'registros') carregarRegistros();
   }
+  if (pageId === 'perfil') carregarPerfil();
   if (push) {
     history.pushState({ pageId }, "", `#${pageId}`);
   }
@@ -358,8 +369,41 @@ function initUsuariosPage() {
   addUsuarioBtn.addEventListener("click", () => abrirModalUsuario());
 }
 
-function initRegistrosPage() {
-  /* apenas carregar registros quando aberto */
+function initPerfilPage() {
+  if (!perfilForm) return;
+  perfilFotoBtn.addEventListener('click', () => perfilFotoInput.click());
+  perfilFotoInput.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        perfilFotoPreview.src = ev.target.result;
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  });
+  perfilForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    mostrarLoading();
+    try {
+      const formData = new FormData();
+      formData.append('usuario', perfilNome.value);
+      if (perfilSenha.value) formData.append('senha', perfilSenha.value);
+      if (perfilFotoInput.files && perfilFotoInput.files[0]) {
+        formData.append('foto', perfilFotoInput.files[0]);
+      }
+      const res = await fetch('/api/usuarios/me', { method: 'PUT', body: formData });
+      if (!res.ok) throw new Error('Falha ao salvar perfil');
+      const user = await res.json();
+      usuarioAtual = { ...usuarioAtual, ...user };
+      mostrarToast('Perfil atualizado');
+    } catch (err) {
+      console.error(err);
+      mostrarToast('Erro ao salvar perfil');
+    } finally {
+      esconderLoading();
+    }
+  });
+  carregarPerfil();
 }
 
 /**
@@ -1276,12 +1320,31 @@ function renderizarUsuarios() {
       </div>
     </div>
   `).join('');
+
+  usuariosLista.querySelectorAll('.item-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.getAttribute('data-id');
+      const u = usuariosCache.find(x => x.id === id);
+      if (u) abrirModalUsuario(u);
+    });
+  });
 }
 
-function abrirModalUsuario() {
+function abrirModalUsuario(usuario = null) {
   usuarioForm.reset();
-  usuarioId.value = '';
-  usuarioModalTitle.textContent = 'Novo Usuário';
+  if (usuario) {
+    usuarioId.value = usuario.id;
+    usuarioNome.value = usuario.usuario;
+    usuarioAdmin.checked = !!usuario.admin;
+    usuarioFoto.value = '';
+    if (usuario.foto) {
+      // not previewed but inform file cannot be set programmatically
+    }
+    usuarioModalTitle.textContent = 'Editar Usuário';
+  } else {
+    usuarioId.value = '';
+    usuarioModalTitle.textContent = 'Novo Usuário';
+  }
   usuarioModal.classList.add('active');
   isEditing = true;
 }
@@ -1289,16 +1352,16 @@ function abrirModalUsuario() {
 usuarioForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
   try {
-    const body = {
-      usuario: usuarioNome.value,
-      senha: usuarioSenha.value,
-      admin: usuarioAdmin.checked
-    };
-    const res = await fetch('/api/usuarios', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+    const formData = new FormData();
+    formData.append('usuario', usuarioNome.value);
+    formData.append('senha', usuarioSenha.value);
+    formData.append('admin', usuarioAdmin.checked);
+    if (usuarioFoto.files && usuarioFoto.files[0]) {
+      formData.append('foto', usuarioFoto.files[0]);
+    }
+    const method = usuarioId.value ? 'PUT' : 'POST';
+    const url = usuarioId.value ? `/api/usuarios/${usuarioId.value}` : '/api/usuarios';
+    const res = await fetch(url, { method, body: formData });
     if (!res.ok) throw new Error('Falha ao salvar usuário');
     usuarioModal.classList.remove('active');
     isEditing = false;
@@ -1343,6 +1406,20 @@ function renderizarRegistros() {
       </div>
     </div>
   `).join('');
+}
+
+async function carregarPerfil() {
+  if (!perfilForm) return;
+  try {
+    const res = await fetch('/api/usuarios/me');
+    if (!res.ok) throw new Error('Erro ao carregar perfil');
+    const user = await res.json();
+    perfilNome.value = user.usuario;
+    if (user.foto) perfilFotoPreview.src = user.foto;
+  } catch (err) {
+    console.error(err);
+    mostrarToast('Erro ao carregar perfil');
+  }
 }
 
 // --- Service Worker e PWA --- //

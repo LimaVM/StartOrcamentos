@@ -87,6 +87,12 @@
           <span>Registros</span>
         </a>
       </li>
+      <li data-page="perfil">
+        <a href="#perfil">
+          <span class="material-icons">account_circle</span>
+          <span>Perfil</span>
+        </a>
+      </li>
       <li data-page="sobre">
         <a href="#sobre">
           <span class="material-icons">info</span>
@@ -200,6 +206,33 @@
         <div id="registros-lista" class="lista-items"></div>
       </section>
 
+      <!-- Página de perfil -->
+      <section id="perfil" class="page">
+        <div class="page-header">
+          <h2>Meu Perfil</h2>
+        </div>
+        <form id="perfil-form" class="perfil-form">
+          <div class="perfil-avatar">
+            <img id="perfil-foto-preview" src="/images/placeholder.png" alt="Foto de perfil">
+            <input type="file" id="perfil-foto" accept="image/*" style="display:none;">
+            <button type="button" id="perfil-foto-btn" class="btn btn-secondary">
+              <span class="material-icons">photo_camera</span> Alterar Foto
+            </button>
+          </div>
+          <div class="form-group">
+            <label for="perfil-nome">Nome de usuário</label>
+            <input type="text" id="perfil-nome" required>
+          </div>
+          <div class="form-group">
+            <label for="perfil-senha">Nova senha</label>
+            <input type="password" id="perfil-senha">
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </div>
+        </form>
+      </section>
+
       <!-- Página sobre -->
       <section id="sobre" class="page">
         <div class="page-header">
@@ -277,6 +310,10 @@
       <li class="bottom-nav-item admin-only" data-page="registros" style="display:none;">
         <span class="material-icons">receipt_long</span>
         <span>Registros</span>
+      </li>
+      <li class="bottom-nav-item" data-page="perfil">
+        <span class="material-icons">account_circle</span>
+        <span>Perfil</span>
       </li>
       <li class="bottom-nav-item" data-page="sobre">
         <span class="material-icons">info</span>
@@ -496,6 +533,10 @@
           <div class="form-group">
             <label for="usuario-senha">Senha</label>
             <input type="password" id="usuario-senha" required>
+          </div>
+          <div class="form-group">
+            <label for="usuario-foto">Foto de perfil</label>
+            <input type="file" id="usuario-foto" accept="image/*">
           </div>
           <div class="form-group">
             <label><input type="checkbox" id="usuario-admin"> Administrador</label>

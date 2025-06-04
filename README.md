@@ -92,6 +92,7 @@ O aplicativo é 100% responsivo e otimizado para:
 - Página "Sobre" com layout mais profissional
 - Dados em cache na memória para respostas mais rápidas
 - Instância única do Puppeteer reutilizada para gerar PDFs
+- Cada usuário pode atualizar seu próprio perfil (nome, senha e foto)
 
 ## Licença
 
