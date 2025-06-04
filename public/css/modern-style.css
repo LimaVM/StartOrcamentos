@@ -568,7 +568,9 @@ input::placeholder, textarea::placeholder {
 
 /* Botão flutuante */
 .fab {
-  position: relative;
+  position: fixed;
+  bottom: var(--space-lg);
+  right: var(--space-lg);
   width: 56px;
   height: 56px;
   border-radius: var(--border-radius-full);
@@ -1468,11 +1470,7 @@ button:disabled,
   #menu-toggle {
     display: none; /* Esconde o botão de menu superior */
   }
-  .fab {
-    position: fixed;
-    bottom: calc(var(--header-height-mobile) + var(--space-lg));
-    right: var(--space-lg);
-  }
+  /* posição do FAB já definida fora do media query */
 }
 
 @media (max-width: 480px) {

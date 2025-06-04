@@ -17,7 +17,45 @@ const multer = require("multer");
 const ejs = require("ejs"); // Template engine
 const puppeteer = require("puppeteer"); // PDF generation - Garante que está usando o pacote completo
 const app = express();
-const PORT = process.env.PORT || 3000;
+
+let browserInstance = null;
+
+async function getBrowser() {
+  if (!browserInstance) {
+    browserInstance = await puppeteer.launch({
+      executablePath: "/usr/bin/chromium-browser",
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-gpu",
+        "--disable-dev-shm-usage",
+      ],
+      timeout: 120000,
+    });
+    console.log(`Puppeteer iniciado. Versão: ${await browserInstance.version()}`);
+  }
+  return browserInstance;
+}
+
+async function closeBrowser() {
+  if (browserInstance) {
+    try {
+      await browserInstance.close();
+      console.log("Puppeteer fechado.");
+    } catch (err) {
+      console.error("Erro ao fechar Puppeteer:", err);
+    }
+    browserInstance = null;
+  }
+}
+
+process.on("exit", () => {
+  closeBrowser().catch(() => {});
+});
+process.on("SIGINT", () => {
+  closeBrowser().finally(() => process.exit(0));
+});
 
 // Configuração do middleware para processar JSON e dados de formulário
 app.use(express.json({ limit: "100mb" })); // Aumenta limite para JSON (Base64)
@@ -42,7 +80,7 @@ const upload = multer({
   storage: memoryStorage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 100 * 1024 * 1024, // Limite de 10MB
+    fileSize: 100 * 1024 * 1024, // Limite de 100MB
   },
 });
 
@@ -78,22 +116,29 @@ async function criarPastasNecessarias() {
 criarPastasNecessarias();
 
 // --- Funções Auxiliares --- //
+const jsonCache = {};
 
 async function lerArquivoJSON(filePath) {
+  if (jsonCache[filePath]) {
+    return jsonCache[filePath];
+  }
   try {
     const data = await fs.readFile(filePath, "utf8");
-    return JSON.parse(data);
+    jsonCache[filePath] = JSON.parse(data);
   } catch (error) {
     if (error.code === "ENOENT") {
       console.warn(`Arquivo ${filePath} não encontrado, retornando array vazio.`);
-      return [];
+      jsonCache[filePath] = [];
+    } else {
+      console.error(`Erro ao ler arquivo ${filePath}:`, error);
+      throw new Error(`Falha ao ler arquivo JSON: ${filePath}`); // Lança erro para ser tratado
     }
-    console.error(`Erro ao ler arquivo ${filePath}:`, error);
-    throw new Error(`Falha ao ler arquivo JSON: ${filePath}`); // Lança erro para ser tratado
   }
+  return jsonCache[filePath];
 }
 
 async function escreverArquivoJSON(filePath, data) {
+  jsonCache[filePath] = data;
   try {
     await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf8");
     return true;
@@ -478,7 +523,6 @@ app.get("/api/orcamentos/:id/pdf", async (req, res, next) => {
   const orcamentoId = req.params.id;
   const nomeArquivo = `orcamento_${orcamentoId}.pdf`;
   const caminhoArquivoPdf = path.join(__dirname, "public", "pdfs", nomeArquivo);
-  let browser = null;
   let page = null;
 
   try {
@@ -488,20 +532,8 @@ app.get("/api/orcamentos/:id/pdf", async (req, res, next) => {
     console.log(`[PDF ${orcamentoId}] HTML renderizado com EJS.`);
 
     // 2. Inicia o Puppeteer
-    console.log(`[PDF ${orcamentoId}] Iniciando Puppeteer...`);
-browser = await puppeteer.launch({
-  executablePath: "/usr/bin/chromium-browser",
-  headless: true,
-  args: [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-gpu",
-    "--disable-dev-shm-usage"
-  ],
-  timeout: 120000
-    });
-    console.log(`[PDF ${orcamentoId}] Puppeteer iniciado. Versão: ${await browser.version()}`);
-    
+    console.log(`[PDF ${orcamentoId}] Obtendo instância do Puppeteer...`);
+    const browser = await getBrowser();
     page = await browser.newPage();
     console.log(`[PDF ${orcamentoId}] Nova página aberta.`);
 
@@ -571,15 +603,6 @@ browser = await puppeteer.launch({
             console.error(`[PDF ${orcamentoId}] Erro ao fechar página no finally:`, closePageError);
         }
     }
-    if (browser) {
-      try {
-        console.log(`[PDF ${orcamentoId}] Fechando Puppeteer no finally...`);
-        await browser.close();
-        console.log(`[PDF ${orcamentoId}] Puppeteer fechado no finally.`);
-      } catch (closeError) {
-        console.error(`[PDF ${orcamentoId}] Erro ao fechar Puppeteer no finally:`, closeError);
-      }
-    }
   }
 });
 
@@ -642,28 +665,31 @@ app.use((err, req, res, next) => {
   const message = err.message || "Algo deu errado no servidor!";
   res.status(status).json({ erro: message });
 });
-const https = require("https");
-const http = require("http");
+if (require.main === module) {
+  const https = require("https");
+  const http = require("http");
 
-// Certificados Let's Encrypt
-const sslOptions = {
-  key: require("fs").readFileSync("/etc/letsencrypt/live/start.devlimassh.shop/privkey.pem"),
-  cert: require("fs").readFileSync("/etc/letsencrypt/live/start.devlimassh.shop/fullchain.pem")
-};
+  // Certificados Let's Encrypt
+  const sslOptions = {
+    key: require("fs").readFileSync("/etc/letsencrypt/live/start.devlimassh.shop/privkey.pem"),
+    cert: require("fs").readFileSync("/etc/letsencrypt/live/start.devlimassh.shop/fullchain.pem")
+  };
 
-// Redirecionador HTTP → HTTPS
-const redirectApp = express();
-redirectApp.use((req, res) => {
-  const host = req.headers.host.replace(/:\d+$/, "");
-  res.redirect(`https://${host}${req.url}`);
-});
-http.createServer(redirectApp).listen(80, () => {
-  console.log("🔁 Redirecionamento HTTP → HTTPS ativo (porta 80)");
-});
+  // Redirecionador HTTP → HTTPS
+  const redirectApp = express();
+  redirectApp.use((req, res) => {
+    const host = req.headers.host.replace(/:\d+$/, "");
+    res.redirect(`https://${host}${req.url}`);
+  });
 
-// Servidor HTTPS real
-https.createServer(sslOptions, app).listen(443, () => {
-  console.log("✅ Servidor HTTPS rodando em https://start.devlimassh.shop (porta 443)");
-});
+  http.createServer(redirectApp).listen(80, () => {
+    console.log("🔁 Redirecionamento HTTP → HTTPS ativo (porta 80)");
+  });
 
+  // Servidor HTTPS real
+  https.createServer(sslOptions, app).listen(443, () => {
+    console.log("✅ Servidor HTTPS rodando em https://start.devlimassh.shop (porta 443)");
+  });
+}
 
+module.exports = app;

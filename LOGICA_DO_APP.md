@@ -117,7 +117,7 @@ Todos os dados são armazenados em arquivos JSON na pasta `data/`:
    - Busca o orçamento pelo ID
    - Busca o template selecionado na pasta `templates/`
    - Substitui as variáveis do template pelos dados do orçamento (mesmo processo do HTML)
-   - Gera um arquivo PDF a partir do HTML usando a biblioteca html-pdf-node
+   - Gera um arquivo PDF a partir do HTML usando o Puppeteer
    - Salva o PDF na pasta `public/pdfs/` com nome baseado no ID do orçamento
    - Atualiza o orçamento no JSON com a URL do PDF gerado
    - Retorna a URL do PDF e o nome do arquivo para o frontend
@@ -209,7 +209,7 @@ A substituição de variáveis nos templates é feita no backend, nas rotas `/ap
 
 ## Geração de PDF
 
-A geração de PDF é realizada usando a biblioteca html-pdf-node, que utiliza o Puppeteer internamente para renderizar o HTML em PDF:
+A geração de PDF é realizada usando o Puppeteer para renderizar o HTML em PDF:
 
 1. O backend recebe a solicitação para gerar o PDF
 2. Gera o HTML do orçamento com as variáveis substituídas
