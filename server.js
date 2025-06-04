@@ -16,6 +16,8 @@ const path = require("path");
 const multer = require("multer");
 const ejs = require("ejs"); // Template engine
 const puppeteer = require("puppeteer"); // PDF generation - Garante que está usando o pacote completo
+const session = require("express-session");
+const bcrypt = require("bcrypt");
 const app = express();
 
 let browserInstance = null;
@@ -61,6 +63,14 @@ process.on("SIGINT", () => {
 app.use(express.json({ limit: "100mb" })); // Aumenta limite para JSON (Base64)
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 
+app.use(
+  session({
+    secret: "startorcamentos-secret",
+    resave: false,
+    saveUninitialized: false,
+  })
+);
+
 // Configuração para servir arquivos estáticos da pasta public
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -96,17 +106,26 @@ async function criarPastasNecessarias() {
     // Cria arquivos JSON vazios se não existirem
     const produtosPath = path.join(__dirname, "data", "produtos.json");
     const orcamentosPath = path.join(__dirname, "data", "orcamentos.json");
+    const usuariosPath = path.join(__dirname, "data", "usuarios.json");
     try {
       await fs.access(produtosPath);
     } catch {
       await fs.writeFile(produtosPath, "[]", "utf8");
-      console.log("Arquivo produtos.json criado.");
+      if (process.env.NODE_ENV !== 'test') console.log("Arquivo produtos.json criado.");
     }
     try {
       await fs.access(orcamentosPath);
     } catch {
       await fs.writeFile(orcamentosPath, "[]", "utf8");
-      console.log("Arquivo orcamentos.json criado.");
+      if (process.env.NODE_ENV !== 'test') console.log("Arquivo orcamentos.json criado.");
+    }
+    try {
+      await fs.access(usuariosPath);
+    } catch {
+      const senhaPadrao = await bcrypt.hash("start", 10);
+      const adminPadrao = [{ id: "1", usuario: "start", senha: senhaPadrao, admin: true }];
+      await fs.writeFile(usuariosPath, JSON.stringify(adminPadrao, null, 2), "utf8");
+      if (process.env.NODE_ENV !== 'test') console.log("Arquivo usuarios.json criado com usuário admin padrão.");
     }
   } catch (error) {
     console.error("Erro ao criar pastas/arquivos necessários:", error);
@@ -169,6 +188,103 @@ const formatarMoeda = (valor) => {
   return numValor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 };
 
+// --- Autenticação --- //
+const usuariosPath = path.join(__dirname, "data", "usuarios.json");
+
+async function obterUsuarios() {
+  return lerArquivoJSON(usuariosPath);
+}
+
+async function salvarUsuarios(lista) {
+  await escreverArquivoJSON(usuariosPath, lista);
+}
+
+function authRequired(req, res, next) {
+  if (req.session.usuario) return next();
+  res.status(401).json({ erro: "Não autenticado" });
+}
+
+function adminRequired(req, res, next) {
+  if (req.session.usuario?.admin) return next();
+  res.status(403).json({ erro: "Acesso restrito ao administrador" });
+}
+
+// --- Rotas de Login e Usuários --- //
+app.post("/api/login", async (req, res) => {
+  const { usuario, senha } = req.body;
+  if (!usuario || !senha) {
+    return res.status(400).json({ erro: "Credenciais inválidas" });
+  }
+  const usuarios = await obterUsuarios();
+  const found = usuarios.find((u) => u.usuario === usuario);
+  if (!found) return res.status(401).json({ erro: "Usuário ou senha incorretos" });
+  const ok = await bcrypt.compare(senha, found.senha);
+  if (!ok) return res.status(401).json({ erro: "Usuário ou senha incorretos" });
+  req.session.usuario = { id: found.id, usuario: found.usuario, admin: found.admin };
+  res.json({ id: found.id, usuario: found.usuario, admin: found.admin });
+});
+
+app.post("/api/logout", (req, res) => {
+  req.session.destroy(() => {
+    res.json({ mensagem: "Logout realizado" });
+  });
+});
+
+app.get("/api/session", (req, res) => {
+  if (req.session.usuario) {
+    res.json({ autenticado: true, usuario: req.session.usuario });
+  } else {
+    res.json({ autenticado: false });
+  }
+});
+
+// CRUD de usuários (admin)
+app.get("/api/usuarios", authRequired, adminRequired, async (req, res) => {
+  const usuarios = await obterUsuarios();
+  const semSenha = usuarios.map(({ senha, ...rest }) => rest);
+  res.json(semSenha);
+});
+
+app.post("/api/usuarios", authRequired, adminRequired, async (req, res) => {
+  const { usuario, senha, admin } = req.body;
+  if (!usuario || !senha) return res.status(400).json({ erro: "Dados inválidos" });
+  const usuarios = await obterUsuarios();
+  if (usuarios.find((u) => u.usuario === usuario)) {
+    return res.status(400).json({ erro: "Usuário já existe" });
+  }
+  const { nanoid } = await import("nanoid");
+  const novo = {
+    id: nanoid(8),
+    usuario,
+    senha: await bcrypt.hash(senha, 10),
+    admin: !!admin,
+  };
+  usuarios.push(novo);
+  await salvarUsuarios(usuarios);
+  res.status(201).json({ id: novo.id, usuario: novo.usuario, admin: novo.admin });
+});
+
+app.put("/api/usuarios/:id", authRequired, adminRequired, async (req, res) => {
+  const { senha, admin } = req.body;
+  const usuarios = await obterUsuarios();
+  const index = usuarios.findIndex((u) => u.id === req.params.id);
+  if (index === -1) return res.status(404).json({ erro: "Usuário não encontrado" });
+  if (senha) usuarios[index].senha = await bcrypt.hash(senha, 10);
+  if (admin !== undefined) usuarios[index].admin = !!admin;
+  await salvarUsuarios(usuarios);
+  const { senha: s, ...usuario } = usuarios[index];
+  res.json(usuario);
+});
+
+app.delete("/api/usuarios/:id", authRequired, adminRequired, async (req, res) => {
+  const usuarios = await obterUsuarios();
+  const index = usuarios.findIndex((u) => u.id === req.params.id);
+  if (index === -1) return res.status(404).json({ erro: "Usuário não encontrado" });
+  usuarios.splice(index, 1);
+  await salvarUsuarios(usuarios);
+  res.json({ mensagem: "Usuário removido" });
+});
+
 // --- Rotas para Produtos --- //
 app.get("/api/produtos", async (req, res, next) => {
   try {
@@ -192,7 +308,7 @@ app.get("/api/produtos/:id", async (req, res, next) => {
   }
 });
 
-app.post("/api/produtos", upload.single("foto"), async (req, res, next) => {
+app.post("/api/produtos", authRequired, adminRequired, upload.single("foto"), async (req, res, next) => {
   try {
     const { nanoid } = await import("nanoid");
     const { nome, valor, descricao } = req.body;
@@ -221,7 +337,7 @@ app.post("/api/produtos", upload.single("foto"), async (req, res, next) => {
   }
 });
 
-app.put("/api/produtos/:id", upload.single("foto"), async (req, res, next) => {
+app.put("/api/produtos/:id", authRequired, adminRequired, upload.single("foto"), async (req, res, next) => {
   try {
     const { nome, valor, descricao } = req.body;
     const produtoId = req.params.id;
@@ -249,7 +365,7 @@ app.put("/api/produtos/:id", upload.single("foto"), async (req, res, next) => {
   }
 });
 
-app.delete("/api/produtos/:id", async (req, res, next) => {
+app.delete("/api/produtos/:id", authRequired, adminRequired, async (req, res, next) => {
   try {
     const produtoId = req.params.id;
     const produtos = await lerArquivoJSON(path.join(__dirname, "data", "produtos.json"));
@@ -306,10 +422,11 @@ app.get("/api/templates/:id", async (req, res, next) => {
 });
 
 // --- Rotas para Orçamentos --- //
-app.get("/api/orcamentos", async (req, res, next) => {
+app.get("/api/orcamentos", authRequired, async (req, res, next) => {
   try {
     const orcamentos = await lerArquivoJSON(path.join(__dirname, "data", "orcamentos.json"));
-    const orcamentosSemFotoItens = orcamentos.map(orc => ({
+    const filtrados = req.session.usuario.admin ? orcamentos : orcamentos.filter(o => o.userId === req.session.usuario.id);
+    const orcamentosSemFotoItens = filtrados.map(orc => ({
         ...orc,
         itens: orc.itens.map(({ foto, ...restoItem }) => restoItem)
     }));
@@ -319,7 +436,7 @@ app.get("/api/orcamentos", async (req, res, next) => {
   }
 });
 
-app.get("/api/orcamentos/:id", async (req, res, next) => {
+app.get("/api/orcamentos/:id", authRequired, async (req, res, next) => {
   try {
     const orcamentoId = req.params.id;
     const orcamentos = await lerArquivoJSON(path.join(__dirname, "data", "orcamentos.json"));
@@ -327,13 +444,16 @@ app.get("/api/orcamentos/:id", async (req, res, next) => {
     if (!orcamento) {
       return res.status(404).json({ erro: "Orçamento não encontrado" });
     }
+    if (!req.session.usuario.admin && orcamento.userId !== req.session.usuario.id) {
+      return res.status(403).json({ erro: "Acesso negado" });
+    }
     res.json(orcamento);
   } catch (error) {
     next(error);
   }
 });
 
-app.post("/api/orcamentos", async (req, res, next) => {
+app.post("/api/orcamentos", authRequired, async (req, res, next) => {
   try {
     const { nanoid } = await import("nanoid");
     const {
@@ -416,6 +536,7 @@ app.post("/api/orcamentos", async (req, res, next) => {
       dataCriacao: new Date().toISOString(),
       status: "pendente",
       pdfUrl: null,
+      userId: req.session.usuario.id,
     };
 
     const orcamentos = await lerArquivoJSON(path.join(__dirname, "data", "orcamentos.json"));
@@ -506,9 +627,12 @@ async function renderizarHtmlOrcamento(orcamentoId) {
 /**
  * Rota para gerar o HTML do orçamento (visualização no front-end)
  */
-app.get("/api/orcamentos/:id/gerar", async (req, res, next) => {
+app.get("/api/orcamentos/:id/gerar", authRequired, async (req, res, next) => {
   try {
-    const { html } = await renderizarHtmlOrcamento(req.params.id);
+    const { html, orcamentoData } = await renderizarHtmlOrcamento(req.params.id);
+    if (!req.session.usuario.admin && orcamentoData.userId !== req.session.usuario.id) {
+      return res.status(403).json({ erro: "Acesso negado" });
+    }
     res.json({ html });
   } catch (error) {
     next(error); // Passa o erro para o middleware
@@ -519,7 +643,7 @@ app.get("/api/orcamentos/:id/gerar", async (req, res, next) => {
  * Rota para gerar e baixar o PDF do orçamento usando Puppeteer
  * AJUSTADA PARA MAIOR ROBUSTEZ (v2.3.0 - Margens reduzidas)
  */
-app.get("/api/orcamentos/:id/pdf", async (req, res, next) => {
+app.get("/api/orcamentos/:id/pdf", authRequired, async (req, res, next) => {
   const orcamentoId = req.params.id;
   const nomeArquivo = `orcamento_${orcamentoId}.pdf`;
   const caminhoArquivoPdf = path.join(__dirname, "public", "pdfs", nomeArquivo);
@@ -529,6 +653,9 @@ app.get("/api/orcamentos/:id/pdf", async (req, res, next) => {
     console.log(`[PDF ${orcamentoId}] Iniciando geração.`);
     // 1. Renderiza o HTML usando EJS
     const { html, orcamentoData, orcamentos } = await renderizarHtmlOrcamento(orcamentoId);
+    if (!req.session.usuario.admin && orcamentoData.userId !== req.session.usuario.id) {
+      return res.status(403).json({ erro: "Acesso negado" });
+    }
     console.log(`[PDF ${orcamentoId}] HTML renderizado com EJS.`);
 
     // 2. Inicia o Puppeteer
@@ -608,13 +735,16 @@ app.get("/api/orcamentos/:id/pdf", async (req, res, next) => {
 /**
  * Rota para excluir um orçamento
  */
-app.delete("/api/orcamentos/:id", async (req, res, next) => {
+app.delete("/api/orcamentos/:id", authRequired, async (req, res, next) => {
   try {
     const orcamentoId = req.params.id;
     const orcamentos = await lerArquivoJSON(path.join(__dirname, "data", "orcamentos.json"));
     const index = orcamentos.findIndex((o) => o.id === orcamentoId);
     if (index === -1) {
       return res.status(404).json({ erro: "Orçamento não encontrado" });
+    }
+    if (!req.session.usuario.admin && orcamentos[index].userId !== req.session.usuario.id) {
+      return res.status(403).json({ erro: "Acesso negado" });
     }
     // Tenta remover o PDF associado
     if (orcamentos[index].pdfUrl) {

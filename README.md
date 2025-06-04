@@ -11,6 +11,7 @@ Um aplicativo web progressivo (PWA) moderno para criação e gerenciamento de or
 - Geração de PDF para download e compartilhamento
 - Funcionamento offline
 - Interface intuitiva e amigável
+- Sistema de login com usuários e permissões (admin pode gerenciar dados)
 
 ## Tecnologias Utilizadas
 
@@ -67,6 +68,7 @@ O arquivo `variaveis_template.txt` contém todas as variáveis disponíveis para
    npm start
    ```
 4. O servidor escuta nas portas 80 e 443 (HTTPS). Acesse em `https://seu_dominio`
+5. Faça login com o usuário padrão `start` e senha `start`
 
 ## Responsividade
 

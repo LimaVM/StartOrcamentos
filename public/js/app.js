@@ -31,6 +31,12 @@ const loadingSpinner = document.getElementById("loading-spinner");
 const pdfProgressOverlay = document.getElementById("pdf-progress-overlay");
 const pdfProgressBar = document.getElementById("pdf-progress-bar");
 
+// Elementos de login
+const loginModal = document.getElementById("login-modal");
+const loginForm = document.getElementById("login-form");
+const loginUsuario = document.getElementById("login-usuario");
+const loginSenha = document.getElementById("login-senha");
+
 // Elementos da página inicial
 const cardProdutos = document.getElementById("card-produtos");
 const cardOrcamentos = document.getElementById("card-orcamentos");
@@ -106,14 +112,51 @@ function updateLayout() {
   }
 }
 
-/**
- * Inicializa o aplicativo quando o DOM estiver carregado
- */
-document.addEventListener("DOMContentLoaded", () => {
-  const initial = window.location.hash.replace("#", "") || "home";
+async function verificarSessao() {
+  try {
+    const res = await fetch('/api/session');
+    const data = await res.json();
+    if (data.autenticado) {
+      iniciarAplicacao();
+      loginModal.classList.remove('active');
+    } else {
+      loginModal.classList.add('active');
+      if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          await realizarLogin();
+        });
+      }
+    }
+  } catch (e) {
+    console.error('Falha ao verificar sessão', e);
+    loginModal.classList.add('active');
+  }
+}
+
+async function realizarLogin() {
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario: loginUsuario.value, senha: loginSenha.value })
+    });
+    if (res.ok) {
+      loginModal.classList.remove('active');
+      iniciarAplicacao();
+    } else {
+      mostrarToast('Credenciais inválidas');
+    }
+  } catch (err) {
+    console.error('Erro ao fazer login', err);
+    mostrarToast('Erro ao fazer login');
+  }
+}
+
+function iniciarAplicacao() {
+  const initial = window.location.hash.replace('#', '') || 'home';
   navigateToPage(initial, false);
-  history.replaceState({ pageId: initial }, "", `#${initial}`);
-  updateLayout();
+  history.replaceState({ pageId: initial }, '', `#${initial}`);
   initNavigation();
   initModals();
   initHomePage();
@@ -121,6 +164,15 @@ document.addEventListener("DOMContentLoaded", () => {
   initOrcamentosPage();
   carregarDadosIniciais();
   initInstallPrompt();
+
+}
+
+/**
+ * Inicializa o aplicativo quando o DOM estiver carregado
+ */
+document.addEventListener("DOMContentLoaded", () => {
+  updateLayout();
+  verificarSessao();
 });
 
 window.addEventListener("popstate", (e) => {

@@ -295,9 +295,13 @@ if (navigator.share) {
   });
 } else {
   // Fallback para navegadores que não suportam a API
-  mostrarToast('Compartilhamento não suportado. Use o botão de download.');
+mostrarToast('Compartilhamento não suportado. Use o botão de download.');
 }
 ```
+
+## Autenticação
+
+O backend mantém sessões de usuário. Um administrador padrão é criado na primeira inicialização com usuário `start` e senha `start`. Apenas esse usuário pode cadastrar ou editar produtos e gerenciar outros usuários. Os orçamentos comuns ficam visíveis somente para o usuário que os criou.
 
 ## Conclusão
 

@@ -712,6 +712,14 @@ input::placeholder, textarea::placeholder {
   opacity: 1;
 }
 
+#login-modal .modal-content {
+  max-width: 360px;
+}
+
+#login-modal .form-actions {
+  justify-content: flex-end;
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -1017,6 +1025,7 @@ button:disabled,
 .selected-item .item-details {
   flex: 1;
   padding: 0 var(--space-sm);
+  font-weight: 500;
 }
 
 .selected-item .item-image-small {
