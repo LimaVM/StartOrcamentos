@@ -16,7 +16,9 @@ let usuariosCache = [];
 let registrosCache = [];
 let produtosSelecionados = []; // Formato: { id, nome, valorUnitario, quantidade, foto }
 let deferredPrompt = null;
-let isEditing = false; // Indica se um formulário de produto ou orçamento está aberto
+let isEditing = false; // Indica se há alterações não salvas
+let currentForm = null;
+let formSnapshot = "";
 let currentPage = "home"; // Página atual para controle do histórico
 let usuarioAtual = null; // Dados do usuário logado
 
@@ -34,6 +36,10 @@ const toastMessage = document.getElementById("toast-message");
 const loadingSpinner = document.getElementById("loading-spinner");
 const pdfProgressOverlay = document.getElementById("pdf-progress-overlay");
 const pdfProgressBar = document.getElementById("pdf-progress-bar");
+const confirmModal = document.getElementById("confirm-modal");
+const confirmMessage = document.getElementById("confirm-message");
+const confirmOk = document.getElementById("confirm-ok");
+const confirmCancel = document.getElementById("confirm-cancel");
 
 // Elementos de login
 const loginModal = document.getElementById("login-modal");
@@ -72,6 +78,7 @@ const perfilSenha = document.getElementById("perfil-senha");
 const perfilFotoInput = document.getElementById("perfil-foto");
 const perfilFotoPreview = document.getElementById("perfil-foto-preview");
 const perfilFotoBtn = document.getElementById("perfil-foto-btn");
+const logoutBtn = document.getElementById("logout-btn");
 
 // Elementos do modal de usuário
 const usuarioModal = document.getElementById("usuario-modal");
@@ -246,17 +253,11 @@ document.addEventListener("DOMContentLoaded", () => {
   verificarSessao();
 });
 
-window.addEventListener("popstate", (e) => {
+window.addEventListener("popstate", async (e) => {
   const pageId = e.state?.pageId || "home";
-  navigateToPage(pageId, false);
+  await navigateToPage(pageId, false);
 });
 
-window.addEventListener("beforeunload", (e) => {
-  if (isEditing) {
-    e.preventDefault();
-    e.returnValue = "";
-  }
-});
 
 /**
  * Carrega os dados iniciais (produtos, templates, orçamentos)
@@ -292,17 +293,17 @@ function initNavigation() {
   menuClose.addEventListener("click", fecharMenu);
   overlay.addEventListener("click", fecharMenu);
   menuItems.forEach((item) => {
-    item.addEventListener("click", (e) => {
+    item.addEventListener("click", async (e) => {
       e.preventDefault();
       const pageId = item.getAttribute("data-page");
-      navigateToPage(pageId);
+      await navigateToPage(pageId);
       fecharMenu();
     });
   });
   bottomNavItems.forEach((item) => {
-    item.addEventListener("click", () => {
+    item.addEventListener("click", async () => {
       const pageId = item.getAttribute("data-page");
-      navigateToPage(pageId);
+      await navigateToPage(pageId);
     });
   });
 
@@ -314,9 +315,9 @@ function fecharMenu() {
   overlay.classList.remove("active");
 }
 
-function navigateToPage(pageId, push = true) {
+async function navigateToPage(pageId, push = true) {
   if (currentPage === pageId) return;
-  if (!confirmExitIfEditing()) return;
+  if (!(await confirmExitIfEditing())) return;
   menuItems.forEach((i) => i.classList.toggle("active", i.getAttribute("data-page") === pageId));
   bottomNavItems.forEach((i) => i.classList.toggle("active", i.getAttribute("data-page") === pageId));
   pages.forEach((page) => page.classList.toggle("active", page.id === pageId));
@@ -331,17 +332,17 @@ function navigateToPage(pageId, push = true) {
   }
 }
 
-function confirmExitIfEditing() {
+async function confirmExitIfEditing() {
   if (isEditing) {
-    return confirm("Tem certeza que deseja sair? Dados não salvos serão perdidos.");
+    return await mostrarConfirmacao("Tem certeza que deseja sair? Dados não salvos serão perdidos.");
   }
   return true;
 }
 
-function fecharModalComConfirmacao(modal) {
+async function fecharModalComConfirmacao(modal) {
   if (!modal) return;
   const requiresConfirm = modal.id === "produto-modal" || modal.id === "orcamento-modal";
-  if (requiresConfirm && !confirmExitIfEditing()) {
+  if (requiresConfirm && !(await confirmExitIfEditing())) {
     return;
   }
   modal.classList.remove("active");
@@ -350,20 +351,21 @@ function fecharModalComConfirmacao(modal) {
   }
   if (requiresConfirm) {
     isEditing = false;
+    currentForm = null;
   }
 }
 
 function initModals() {
   modalCloseBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const modal = btn.closest(".modal");
-      fecharModalComConfirmacao(modal);
+      await fecharModalComConfirmacao(modal);
     });
   });
   modalCancelBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const modal = btn.closest(".modal");
-      fecharModalComConfirmacao(modal);
+      await fecharModalComConfirmacao(modal);
     });
   });
   initProdutoModal();
@@ -446,6 +448,10 @@ function initPerfilPage() {
       esconderLoading();
     }
   });
+  logoutBtn?.addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    location.reload();
+  });
   carregarPerfil();
 }
 
@@ -454,6 +460,9 @@ function initPerfilPage() {
  */
 function initProdutoModal() {
   selectFotoBtn.addEventListener("click", () => produtoFotoInput.click());
+
+  produtoForm.addEventListener("input", markFormChanged);
+  produtoForm.addEventListener("change", markFormChanged);
 
   produtoFotoInput.addEventListener("change", (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -497,6 +506,7 @@ function initProdutoModal() {
       await carregarProdutos(); // Recarrega a lista para refletir a mudança
       produtoModal.classList.remove("active");
       isEditing = false;
+      currentForm = null;
       mostrarToast("Produto salvo com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar produto:", error);
@@ -519,6 +529,8 @@ function initOrcamentoModal() {
   });
   prevTabBtn.addEventListener("click", navegarTabAnterior);
   nextTabBtn.addEventListener("click", navegarProximaTab);
+  orcamentoForm.addEventListener("input", markFormChanged);
+  orcamentoForm.addEventListener("change", markFormChanged);
   clienteNome.addEventListener("input", () => {
     validarClienteNome();
     atualizarEstadoBotaoProximo();
@@ -595,6 +607,7 @@ function initOrcamentoModal() {
       await carregarOrcamentos();
       orcamentoModal.classList.remove("active");
       isEditing = false;
+      currentForm = null;
       mostrarToast(orcId ? "Orçamento atualizado" : "Orçamento criado com sucesso!");
       abrirModalVisualizarOrcamento(orcamento.id);
     } catch (error) {
@@ -987,7 +1000,7 @@ async function abrirModalProduto(id = null) {
     produtoValor.value = "";
   }
   produtoModal.classList.add("active");
-  isEditing = true;
+  setCurrentForm(produtoForm);
 }
 
 function abrirModalOrcamento() {
@@ -1003,7 +1016,7 @@ function abrirModalOrcamento() {
   orcamentoIdInput.value = "";
   clienteCpf.value = "";
   orcamentoModal.classList.add("active");
-  isEditing = true;
+  setCurrentForm(orcamentoForm);
   validarClienteNome(false);
   atualizarEstadoBotaoProximo();
 }
@@ -1049,7 +1062,7 @@ async function abrirModalEditarOrcamento(id) {
       item.classList.toggle("selected", item.getAttribute("data-id") === orc.templateId);
     });
     orcamentoModal.classList.add("active");
-    isEditing = true;
+    setCurrentForm(orcamentoForm);
     validarClienteNome(false);
     atualizarEstadoBotaoProximo();
   } catch (err) {
@@ -1092,8 +1105,8 @@ async function abrirModalVisualizarOrcamento(id) {
 
 // --- Funções de Ação (Excluir, Editar, etc.) --- //
 
-function confirmarExclusaoProduto(id) {
-  if (confirm("Tem certeza que deseja excluir este produto?")) {
+async function confirmarExclusaoProduto(id) {
+  if (await mostrarConfirmacao("Tem certeza que deseja excluir este produto?")) {
     excluirProduto(id);
   }
 }
@@ -1115,8 +1128,8 @@ async function excluirProduto(id) {
   }
 }
 
-function confirmarExclusaoOrcamento(id) {
-  if (confirm("Tem certeza que deseja excluir este orçamento?")) {
+async function confirmarExclusaoOrcamento(id) {
+  if (await mostrarConfirmacao("Tem certeza que deseja excluir este orçamento?")) {
     excluirOrcamento(id);
   }
 }
@@ -1353,6 +1366,45 @@ function finalizarProgressoPdf() {
   }, 400);
 }
 
+function snapshotForm(form) {
+  return JSON.stringify(Array.from(new FormData(form).entries()));
+}
+
+function setCurrentForm(form) {
+  currentForm = form;
+  formSnapshot = snapshotForm(form);
+  isEditing = false;
+}
+
+function markFormChanged() {
+  if (currentForm) {
+    isEditing = snapshotForm(currentForm) !== formSnapshot;
+  }
+}
+
+function mostrarConfirmacao(mensagem) {
+  return new Promise((resolve) => {
+    if (!confirmModal) return resolve(true);
+    confirmMessage.textContent = mensagem;
+    confirmModal.classList.add("active");
+    const limpar = () => {
+      confirmOk.removeEventListener("click", ok);
+      confirmCancel.removeEventListener("click", cancel);
+      confirmModal.classList.remove("active");
+    };
+    const ok = () => {
+      limpar();
+      resolve(true);
+    };
+    const cancel = () => {
+      limpar();
+      resolve(false);
+    };
+    confirmOk.addEventListener("click", ok);
+    confirmCancel.addEventListener("click", cancel);
+  });
+}
+
 // --- Usuários (Admin) --- //
 async function carregarUsuarios() {
   try {
@@ -1408,8 +1460,11 @@ function abrirModalUsuario(usuario = null) {
     usuarioModalTitle.textContent = 'Novo Usuário';
   }
   usuarioModal.classList.add('active');
-  isEditing = true;
+  setCurrentForm(usuarioForm);
 }
+
+usuarioForm?.addEventListener('input', markFormChanged);
+usuarioForm?.addEventListener('change', markFormChanged);
 
 usuarioForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -1427,6 +1482,7 @@ usuarioForm?.addEventListener('submit', async (e) => {
     if (!res.ok) throw new Error('Falha ao salvar usuário');
     usuarioModal.classList.remove('active');
     isEditing = false;
+    currentForm = null;
     await carregarUsuarios();
     mostrarToast('Usuário salvo');
   } catch (err) {

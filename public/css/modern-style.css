@@ -723,6 +723,11 @@ input::placeholder, textarea::placeholder {
   max-width: 360px;
 }
 
+#confirm-modal .modal-content {
+  max-width: 340px;
+  text-align: center;
+}
+
 #login-modal .form-actions {
   justify-content: flex-end;
 }

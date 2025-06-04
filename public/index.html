@@ -258,6 +258,9 @@
             <button type="submit" class="btn btn-primary">Salvar</button>
           </div>
         </form>
+        <div class="form-actions">
+          <button type="button" id="logout-btn" class="btn btn-danger">Sair</button>
+        </div>
       </section>
 
       <!-- Página sobre -->
@@ -661,6 +664,22 @@
   <!-- Barra de progresso para geração de PDF -->
   <div id="pdf-progress-overlay" class="progress-overlay">
     <div id="pdf-progress-bar" class="progress-bar"></div>
+  </div>
+
+  <!-- Modal de confirmação genérico -->
+  <div id="confirm-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Confirmar</h3>
+      </div>
+      <div class="modal-body">
+        <p id="confirm-message"></p>
+      </div>
+      <div class="form-actions">
+        <button type="button" id="confirm-cancel" class="btn btn-secondary modal-cancel">Cancelar</button>
+        <button type="button" id="confirm-ok" class="btn btn-danger">Sim</button>
+      </div>
+    </div>
   </div>
 
   <!-- Scripts -->
