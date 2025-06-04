@@ -135,8 +135,7 @@
     <% if (orcamento.formaPagamento === 'avista') { %>
     <p><strong>Pagamento:</strong> à vista (<%= orcamento.avistaTipo === 'cartao' ? 'Cartão' : 'Dinheiro' %>)</p>
     <% } else { %>
-    <p><strong>Pagamento:</strong> <%= orcamento.parcelas %>x de <%= orcamento.valorParcelaFormatada %> (<%= orcamento.jurosMes %>% a.m.)</p>
-    <p><strong>Total com juros:</strong> <%= orcamento.valorTotalComJurosFormatado %></p>
+    <p><strong>Pagamento:</strong> <%= orcamento.parcelas %>x de <%= orcamento.valorParcelaFormatada %></p>
     <% } %>
 
     <p><strong>Condições:</strong></p>
