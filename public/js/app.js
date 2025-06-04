@@ -26,6 +26,8 @@ const bottomNavItems = document.querySelectorAll(".bottom-nav-item");
 const pages = document.querySelectorAll(".page");
 const toast = document.getElementById("toast");
 const loadingSpinner = document.getElementById("loading-spinner");
+const pdfProgressOverlay = document.getElementById("pdf-progress-overlay");
+const pdfProgressBar = document.getElementById("pdf-progress-bar");
 
 // Elementos da página inicial
 const cardProdutos = document.getElementById("card-produtos");
@@ -727,7 +729,7 @@ function abrirModalSelecionarProdutos() {
 
 async function abrirModalVisualizarOrcamento(id) {
   if (!id) return;
-  mostrarLoading();
+  iniciarProgressoPdf();
   orcamentoPreview.innerHTML = `<div class="loading"><div class="spinner"></div><p>Gerando pré-visualização...</p></div>`;
   visualizarOrcamentoModal.classList.add("active");
 
@@ -745,7 +747,7 @@ async function abrirModalVisualizarOrcamento(id) {
     orcamentoPreview.innerHTML = `<p class="error">Erro ao carregar orçamento: ${error.message}</p>`;
     mostrarToast("Erro ao carregar orçamento.");
   } finally {
-    esconderLoading();
+    finalizarProgressoPdf();
   }
 }
 
@@ -858,7 +860,7 @@ function filtrarProdutosSelecionaveis(termo) {
 async function baixarPdfOrcamento() {
   const orcamentoId = baixarPdfBtn.getAttribute("data-id");
   if (!orcamentoId) return;
-  mostrarLoading();
+  iniciarProgressoPdf();
   try {
     const response = await fetch(`/api/orcamentos/${orcamentoId}/pdf`);
     if (!response.ok) {
@@ -885,7 +887,7 @@ async function baixarPdfOrcamento() {
     console.error("Erro ao baixar PDF:", error);
     mostrarToast(`Erro ao baixar PDF: ${error.message}`);
   } finally {
-    esconderLoading();
+    finalizarProgressoPdf();
   }
 }
 
@@ -945,6 +947,30 @@ function mostrarLoading() {
 
 function esconderLoading() {
   if (loadingSpinner) loadingSpinner.style.display = "none";
+}
+
+let pdfProgressInterval = null;
+function iniciarProgressoPdf() {
+  if (!pdfProgressOverlay || !pdfProgressBar) return;
+  pdfProgressBar.style.width = "0%";
+  pdfProgressOverlay.classList.add("active");
+  let progress = 0;
+  pdfProgressInterval = setInterval(() => {
+    progress += Math.random() * 10;
+    if (progress > 90) progress = 90;
+    pdfProgressBar.style.width = progress + "%";
+  }, 200);
+}
+
+function finalizarProgressoPdf() {
+  if (!pdfProgressOverlay || !pdfProgressBar) return;
+  if (pdfProgressInterval) clearInterval(pdfProgressInterval);
+  pdfProgressBar.style.width = "100%";
+  setTimeout(() => {
+    pdfProgressOverlay.classList.remove("active");
+    pdfProgressBar.style.width = "0%";
+    pdfProgressInterval = null;
+  }, 400);
 }
 
 // --- Service Worker e PWA --- //
