@@ -6,6 +6,99 @@
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4285f4",
+  "shortcuts": [
+    {
+      "name": "Início",
+      "short_name": "Início",
+      "description": "Abrir home",
+      "url": "/#home",
+      "icons": [
+        {
+          "src": "/images/icons/icon-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Produtos",
+      "short_name": "Produtos",
+      "description": "Ver produtos",
+      "url": "/#produtos",
+      "icons": [
+        {
+          "src": "/images/icons/icon-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Orçamentos",
+      "short_name": "Orçamentos",
+      "description": "Ver orçamentos",
+      "url": "/#orcamentos",
+      "icons": [
+        {
+          "src": "/images/icons/icon-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Usuários",
+      "short_name": "Usuários",
+      "description": "Gerenciar usuários",
+      "url": "/#usuarios",
+      "icons": [
+        {
+          "src": "/images/icons/icon-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Registros",
+      "short_name": "Registros",
+      "description": "Ver registros",
+      "url": "/#registros",
+      "icons": [
+        {
+          "src": "/images/icons/icon-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Perfil",
+      "short_name": "Perfil",
+      "description": "Meu perfil",
+      "url": "/#perfil",
+      "icons": [
+        {
+          "src": "/images/icons/icon-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Sobre",
+      "short_name": "Sobre",
+      "description": "Informações",
+      "url": "/#sobre",
+      "icons": [
+        {
+          "src": "/images/icons/icon-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
   "icons": [
     {
       "src": "/images/icons/icon-72x72.png",
