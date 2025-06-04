@@ -1452,6 +1452,7 @@ button:disabled,
   align-items: center;
   height: 100%;
   list-style: none;
+  gap: var(--space-2xs);
 }
 
 .bottom-nav-item {
@@ -1461,18 +1462,18 @@ button:disabled,
   justify-content: center;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: var(--space-xs) 0;
+  padding: var(--space-2xs) 0;
   transition: color var(--transition-fast);
   flex: 1;
 }
 
 .bottom-nav-item .material-icons {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   margin-bottom: var(--space-2xs);
 }
 
 .bottom-nav-item span:last-child {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
 }
 
 .bottom-nav-item.active {
