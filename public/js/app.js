@@ -12,10 +12,13 @@
 let produtosCache = [];
 let templatesCache = [];
 let orcamentosCache = [];
+let usuariosCache = [];
+let registrosCache = [];
 let produtosSelecionados = []; // Formato: { id, nome, valorUnitario, quantidade, foto }
 let deferredPrompt = null;
 let isEditing = false; // Indica se um formulário de produto ou orçamento está aberto
 let currentPage = "home"; // Página atual para controle do histórico
+let usuarioAtual = null; // Dados do usuário logado
 
 // Elementos DOM frequentemente acessados
 const appContent = document.getElementById("app-content");
@@ -50,6 +53,22 @@ const produtosLista = document.getElementById("produtos-lista");
 const addOrcamentoBtn = document.getElementById("add-orcamento-btn");
 const orcamentoSearch = document.getElementById("orcamento-search");
 const orcamentosLista = document.getElementById("orcamentos-lista");
+
+// Elementos da página de usuários (admin)
+const addUsuarioBtn = document.getElementById("add-usuario-btn");
+const usuariosLista = document.getElementById("usuarios-lista");
+
+// Elementos da página de registros (admin)
+const registrosLista = document.getElementById("registros-lista");
+
+// Elementos do modal de usuário
+const usuarioModal = document.getElementById("usuario-modal");
+const usuarioModalTitle = document.getElementById("usuario-modal-title");
+const usuarioForm = document.getElementById("usuario-form");
+const usuarioId = document.getElementById("usuario-id");
+const usuarioNome = document.getElementById("usuario-nome");
+const usuarioSenha = document.getElementById("usuario-senha");
+const usuarioAdmin = document.getElementById("usuario-admin");
 
 // Elementos do modal de produto
 const produtoModal = document.getElementById("produto-modal");
@@ -112,12 +131,20 @@ function updateLayout() {
   }
 }
 
+function configurarMenuAdmin() {
+  document.querySelectorAll('.admin-only').forEach(el => {
+    el.style.display = usuarioAtual && usuarioAtual.admin ? '' : 'none';
+  });
+}
+
 async function verificarSessao() {
   try {
     const res = await fetch('/api/session');
     const data = await res.json();
     if (data.autenticado) {
+      usuarioAtual = data.usuario;
       iniciarAplicacao();
+      configurarMenuAdmin();
       loginModal.classList.remove('active');
     } else {
       loginModal.classList.add('active');
@@ -142,6 +169,8 @@ async function realizarLogin() {
       body: JSON.stringify({ usuario: loginUsuario.value, senha: loginSenha.value })
     });
     if (res.ok) {
+      usuarioAtual = await res.json();
+      configurarMenuAdmin();
       loginModal.classList.remove('active');
       iniciarAplicacao();
     } else {
@@ -162,6 +191,7 @@ function iniciarAplicacao() {
   initHomePage();
   initProdutosPage();
   initOrcamentosPage();
+  initUsuariosPage();
   carregarDadosIniciais();
   initInstallPrompt();
 
@@ -199,6 +229,9 @@ async function carregarDadosIniciais() {
       carregarTemplates(),
       carregarOrcamentos(),
     ]);
+    if (usuarioAtual && usuarioAtual.admin) {
+      await Promise.all([carregarUsuarios(), carregarRegistros()]);
+    }
   } catch (error) {
     console.error("Erro ao carregar dados iniciais:", error);
     mostrarToast("Erro ao carregar dados. Verifique sua conexão.");
@@ -247,6 +280,10 @@ function navigateToPage(pageId, push = true) {
   bottomNavItems.forEach((i) => i.classList.toggle("active", i.getAttribute("data-page") === pageId));
   pages.forEach((page) => page.classList.toggle("active", page.id === pageId));
   currentPage = pageId;
+  if (usuarioAtual && usuarioAtual.admin) {
+    if (pageId === 'usuarios') carregarUsuarios();
+    if (pageId === 'registros') carregarRegistros();
+  }
   if (push) {
     history.pushState({ pageId }, "", `#${pageId}`);
   }
@@ -309,6 +346,15 @@ function initOrcamentosPage() {
     const termo = orcamentoSearch.value.toLowerCase();
     filtrarOrcamentos(termo);
   });
+}
+
+function initUsuariosPage() {
+  if (!addUsuarioBtn) return;
+  addUsuarioBtn.addEventListener("click", () => abrirModalUsuario());
+}
+
+function initRegistrosPage() {
+  /* apenas carregar registros quando aberto */
 }
 
 /**
@@ -1128,6 +1174,104 @@ function finalizarProgressoPdf() {
     pdfProgressBar.style.width = "0%";
     pdfProgressInterval = null;
   }, 400);
+}
+
+// --- Usuários (Admin) --- //
+async function carregarUsuarios() {
+  try {
+    const res = await fetch('/api/usuarios');
+    if (!res.ok) throw new Error('Erro ao buscar usuários');
+    usuariosCache = await res.json();
+    renderizarUsuarios();
+  } catch (err) {
+    console.error('Falha ao carregar usuários', err);
+    mostrarToast('Erro ao carregar usuários');
+    usuariosCache = [];
+    renderizarUsuarios();
+  }
+}
+
+function renderizarUsuarios() {
+  if (!usuariosLista) return;
+  if (usuariosCache.length === 0) {
+    usuariosLista.innerHTML = '<p>Nenhum usuário cadastrado</p>';
+    return;
+  }
+  usuariosLista.innerHTML = usuariosCache.map(u => `
+    <div class="item-card" data-id="${u.id}">
+      <div class="item-details">
+        <div class="item-title">${u.usuario}</div>
+        <div class="item-subtitle">${u.admin ? 'Admin' : 'Usuário'}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function abrirModalUsuario() {
+  usuarioForm.reset();
+  usuarioId.value = '';
+  usuarioModalTitle.textContent = 'Novo Usuário';
+  usuarioModal.classList.add('active');
+  isEditing = true;
+}
+
+usuarioForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    const body = {
+      usuario: usuarioNome.value,
+      senha: usuarioSenha.value,
+      admin: usuarioAdmin.checked
+    };
+    const res = await fetch('/api/usuarios', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('Falha ao salvar usuário');
+    usuarioModal.classList.remove('active');
+    isEditing = false;
+    await carregarUsuarios();
+    mostrarToast('Usuário salvo');
+  } catch (err) {
+    console.error(err);
+    mostrarToast('Erro ao salvar usuário');
+  }
+});
+
+document.querySelectorAll('#usuario-modal .modal-close, #usuario-modal .modal-cancel').forEach(btn => {
+  btn.addEventListener('click', () => fecharModalComConfirmacao(usuarioModal));
+});
+
+// --- Registros (Admin) --- //
+async function carregarRegistros() {
+  try {
+    const res = await fetch('/api/logs');
+    if (!res.ok) throw new Error('Erro ao buscar registros');
+    registrosCache = await res.json();
+    renderizarRegistros();
+  } catch (err) {
+    console.error('Falha ao carregar registros', err);
+    mostrarToast('Erro ao carregar registros');
+    registrosCache = [];
+    renderizarRegistros();
+  }
+}
+
+function renderizarRegistros() {
+  if (!registrosLista) return;
+  if (registrosCache.length === 0) {
+    registrosLista.innerHTML = '<p>Nenhum registro disponível</p>';
+    return;
+  }
+  registrosLista.innerHTML = registrosCache.map(l => `
+    <div class="item-card">
+      <div class="item-details">
+        <div class="item-title">${l.descricao}</div>
+        <div class="item-subtitle">${formatarData(l.timestamp)} - ${l.usuario}</div>
+      </div>
+    </div>
+  `).join('');
 }
 
 // --- Service Worker e PWA --- //

@@ -107,6 +107,7 @@ async function criarPastasNecessarias() {
     const produtosPath = path.join(__dirname, "data", "produtos.json");
     const orcamentosPath = path.join(__dirname, "data", "orcamentos.json");
     const usuariosPath = path.join(__dirname, "data", "usuarios.json");
+    const logsPath = path.join(__dirname, "data", "logs.json");
     try {
       await fs.access(produtosPath);
     } catch {
@@ -126,6 +127,12 @@ async function criarPastasNecessarias() {
       const adminPadrao = [{ id: "1", usuario: "start", senha: senhaPadrao, admin: true }];
       await fs.writeFile(usuariosPath, JSON.stringify(adminPadrao, null, 2), "utf8");
       if (process.env.NODE_ENV !== 'test') console.log("Arquivo usuarios.json criado com usuário admin padrão.");
+    }
+    try {
+      await fs.access(logsPath);
+    } catch {
+      await fs.writeFile(logsPath, "[]", "utf8");
+      if (process.env.NODE_ENV !== 'test') console.log("Arquivo logs.json criado.");
     }
   } catch (error) {
     console.error("Erro ao criar pastas/arquivos necessários:", error);
@@ -190,6 +197,7 @@ const formatarMoeda = (valor) => {
 
 // --- Autenticação --- //
 const usuariosPath = path.join(__dirname, "data", "usuarios.json");
+const logsPath = path.join(__dirname, "data", "logs.json");
 
 async function obterUsuarios() {
   return lerArquivoJSON(usuariosPath);
@@ -197,6 +205,34 @@ async function obterUsuarios() {
 
 async function salvarUsuarios(lista) {
   await escreverArquivoJSON(usuariosPath, lista);
+}
+
+async function obterLogs() {
+  return lerArquivoJSON(logsPath);
+}
+
+async function salvarLogs(lista) {
+  await escreverArquivoJSON(logsPath, lista);
+}
+
+async function registrarAcao(req, descricao) {
+  try {
+    const logs = await obterLogs();
+    const { nanoid } = await import('nanoid');
+    const entry = {
+      id: nanoid(8),
+      timestamp: new Date().toISOString(),
+      usuario: req.session?.usuario?.usuario || 'desconhecido',
+      userId: req.session?.usuario?.id || null,
+      ip: req.ip,
+      descricao,
+    };
+    logs.push(entry);
+    await salvarLogs(logs);
+    console.log(`[LOG] ${entry.timestamp} - ${entry.usuario} (${entry.ip}): ${descricao}`);
+  } catch (err) {
+    console.error('Erro ao registrar ação:', err);
+  }
 }
 
 function authRequired(req, res, next) {
@@ -261,6 +297,7 @@ app.post("/api/usuarios", authRequired, adminRequired, async (req, res) => {
   };
   usuarios.push(novo);
   await salvarUsuarios(usuarios);
+  await registrarAcao(req, `Criou usuário ${usuario} (admin=${!!admin})`);
   res.status(201).json({ id: novo.id, usuario: novo.usuario, admin: novo.admin });
 });
 
@@ -283,6 +320,12 @@ app.delete("/api/usuarios/:id", authRequired, adminRequired, async (req, res) =>
   usuarios.splice(index, 1);
   await salvarUsuarios(usuarios);
   res.json({ mensagem: "Usuário removido" });
+});
+
+// Logs (admin)
+app.get("/api/logs", authRequired, adminRequired, async (req, res) => {
+  const logs = await obterLogs();
+  res.json(logs);
 });
 
 // --- Rotas para Produtos --- //
@@ -330,6 +373,7 @@ app.post("/api/produtos", authRequired, adminRequired, upload.single("foto"), as
     };
     produtos.push(novoProduto);
     await escreverArquivoJSON(path.join(__dirname, "data", "produtos.json"), produtos);
+    await registrarAcao(req, `Criou produto ${nome}`);
     const { foto, ...produtoSemFoto } = novoProduto;
     res.status(201).json(produtoSemFoto);
   } catch (error) {
@@ -358,6 +402,7 @@ app.put("/api/produtos/:id", authRequired, adminRequired, upload.single("foto"),
     }
     produtos[index] = produtoAtualizado;
     await escreverArquivoJSON(path.join(__dirname, "data", "produtos.json"), produtos);
+    await registrarAcao(req, `Editou produto ${produtoAtualizado.nome}`);
     const { foto, ...produtoSemFoto } = produtoAtualizado;
     res.json(produtoSemFoto);
   } catch (error) {
@@ -373,8 +418,10 @@ app.delete("/api/produtos/:id", authRequired, adminRequired, async (req, res, ne
     if (index === -1) {
       return res.status(404).json({ erro: "Produto não encontrado" });
     }
+    const nomeRemovido = produtos[index].nome;
     produtos.splice(index, 1);
     await escreverArquivoJSON(path.join(__dirname, "data", "produtos.json"), produtos);
+    await registrarAcao(req, `Removeu produto ${nomeRemovido}`);
     res.json({ mensagem: "Produto excluído com sucesso" });
   } catch (error) {
     next(error);
@@ -542,6 +589,7 @@ app.post("/api/orcamentos", authRequired, async (req, res, next) => {
     const orcamentos = await lerArquivoJSON(path.join(__dirname, "data", "orcamentos.json"));
     orcamentos.push(novoOrcamento);
     await escreverArquivoJSON(path.join(__dirname, "data", "orcamentos.json"), orcamentos);
+    await registrarAcao(req, `Criou orçamento ${novoOrcamento.id} valor ${formatarMoeda(novoOrcamento.valorTotal)}`);
 
     const { itens, ...orcamentoSemFotoItens } = novoOrcamento;
     const itensSemFoto = itens.map(({ foto, ...restoItem }) => restoItem);

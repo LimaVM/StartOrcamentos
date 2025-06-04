@@ -75,6 +75,18 @@
           <span>Orçamentos</span>
         </a>
       </li>
+      <li data-page="usuarios" class="admin-only" style="display:none;">
+        <a href="#usuarios">
+          <span class="material-icons">people</span>
+          <span>Usuários</span>
+        </a>
+      </li>
+      <li data-page="registros" class="admin-only" style="display:none;">
+        <a href="#registros">
+          <span class="material-icons">receipt_long</span>
+          <span>Registros</span>
+        </a>
+      </li>
       <li data-page="sobre">
         <a href="#sobre">
           <span class="material-icons">info</span>
@@ -93,7 +105,7 @@
       <!-- Página inicial -->
       <section id="home" class="page active">
         <div class="page-header">
-          <h2>Bem-vindo ao Start Orçamentos</h2>
+          <h2 class="home-title">Bem-vindo ao Start Orçamentos</h2>
         </div>
         <div class="dashboard">
           <div class="card animate-fadeInUp" id="card-produtos">
@@ -169,6 +181,25 @@
         </div>
       </section>
 
+      <!-- Página de usuários (admin) -->
+      <section id="usuarios" class="page">
+        <div class="page-header">
+          <h2>Usuários</h2>
+          <button id="add-usuario-btn" class="fab" aria-label="Adicionar usuário">
+            <span class="material-icons">add</span>
+          </button>
+        </div>
+        <div id="usuarios-lista" class="lista-items"></div>
+      </section>
+
+      <!-- Página de registros (admin) -->
+      <section id="registros" class="page">
+        <div class="page-header">
+          <h2>Registros</h2>
+        </div>
+        <div id="registros-lista" class="lista-items"></div>
+      </section>
+
       <!-- Página sobre -->
       <section id="sobre" class="page">
         <div class="page-header">
@@ -238,6 +269,14 @@
       <li class="bottom-nav-item" data-page="orcamentos">
         <span class="material-icons">description</span>
         <span>Orçamentos</span>
+      </li>
+      <li class="bottom-nav-item admin-only" data-page="usuarios" style="display:none;">
+        <span class="material-icons">people</span>
+        <span>Usuários</span>
+      </li>
+      <li class="bottom-nav-item admin-only" data-page="registros" style="display:none;">
+        <span class="material-icons">receipt_long</span>
+        <span>Registros</span>
       </li>
       <li class="bottom-nav-item" data-page="sobre">
         <span class="material-icons">info</span>
@@ -431,6 +470,40 @@
           </div>
           <div class="form-actions">
             <button type="submit" class="btn btn-primary">Entrar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para adicionar usuário (admin) -->
+  <div id="usuario-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="usuario-modal-title">Novo Usuário</h3>
+        <button class="modal-close" aria-label="Fechar">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="usuario-form">
+          <input type="hidden" id="usuario-id">
+          <div class="form-group">
+            <label for="usuario-nome">Usuário</label>
+            <input type="text" id="usuario-nome" required>
+          </div>
+          <div class="form-group">
+            <label for="usuario-senha">Senha</label>
+            <input type="password" id="usuario-senha" required>
+          </div>
+          <div class="form-group">
+            <label><input type="checkbox" id="usuario-admin"> Administrador</label>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary modal-cancel">Cancelar</button>
+            <button type="submit" class="btn btn-primary">
+              <span class="material-icons">save</span> Salvar
+            </button>
           </div>
         </form>
       </div>

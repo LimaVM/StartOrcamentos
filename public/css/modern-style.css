@@ -1600,5 +1600,10 @@ button:disabled,
     padding-left: 300px;
     padding-bottom: var(--space-lg);
   }
+
+  /* Esconde o título da página inicial em telas grandes */
+  #home .page-header .home-title {
+    display: none;
+  }
 }
 
