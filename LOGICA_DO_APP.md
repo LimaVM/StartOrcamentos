@@ -101,10 +101,12 @@ Todos os dados são armazenados em arquivos JSON na pasta `data/`:
      - `$nomedocliente` → Nome do cliente
      - `$enderecocliente` → Endereço do cliente (ou vazio se não preenchido)
      - `$telefonecliente` → Telefone do cliente (ou vazio se não preenchido)
-     - `$emailcliente` → E-mail do cliente (ou vazio se não preenchido)
-     - `$dataorcamento` → Data de criação formatada
-     - `$observacoes` → Observações do orçamento (ou vazio se não preenchido)
-     - `$valortotal` → Valor total formatado
+    - `$emailcliente` → E-mail do cliente (ou vazio se não preenchido)
+    - `$cpf` → CPF ou CNPJ do cliente (ou vazio se não preenchido)
+    - `$dataorcamento` → Data de criação formatada
+    - `$observacoes` → Observações do orçamento (ou vazio se não preenchido)
+    - `$referencia` → Mesmo valor de `$id`, para exibir como referência
+    - `$valortotal` → Valor total formatado
      - `$tabelaprodutos` → HTML da tabela de produtos
    - Retorna o HTML gerado para o frontend
 4. O frontend exibe o HTML gerado no modal de visualização

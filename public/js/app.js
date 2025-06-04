@@ -106,6 +106,7 @@ const clienteNome = document.getElementById("cliente-nome");
 const clienteEndereco = document.getElementById("cliente-endereco");
 const clienteTelefone = document.getElementById("cliente-telefone");
 const clienteEmail = document.getElementById("cliente-email");
+const clienteCpf = document.getElementById("cliente-cpf");
 const produtosSelecionadosEl = document.getElementById("produtos-selecionados");
 const addProdutosBtn = document.getElementById("add-produtos-btn");
 const orcamentoObservacoes = document.getElementById("orcamento-observacoes");
@@ -522,6 +523,7 @@ function initOrcamentoModal() {
         enderecoCliente: clienteEndereco.value,
         telefoneCliente: clienteTelefone.value,
         emailCliente: clienteEmail.value,
+        cpfCliente: clienteCpf.value,
         templateId: templateSelecionado.getAttribute("data-id"),
         produtos: produtosSelecionados.map((p) => ({ id: p.id, quantidade: p.quantidade })),
         observacoes: orcamentoObservacoes.value,
@@ -945,6 +947,7 @@ function abrirModalOrcamento() {
   valorDescontoInput.value = "";
   valorDescontoInput.required = false;
   orcamentoIdInput.value = "";
+  clienteCpf.value = "";
   orcamentoModal.classList.add("active");
   isEditing = true;
 }
@@ -964,6 +967,7 @@ async function abrirModalEditarOrcamento(id) {
     clienteEndereco.value = orc.enderecoCliente || "";
     clienteTelefone.value = orc.telefoneCliente || "";
     clienteEmail.value = orc.emailCliente || "";
+    clienteCpf.value = orc.cpfCliente || "";
     orcamentoObservacoes.value = orc.observacoes || "";
     tipoDescontoSelect.value = orc.tipoDesconto || "nenhum";
     if (orc.tipoDesconto && orc.valorDescontoInput) {
