@@ -36,3 +36,18 @@ describe('POST /api/usuarios', () => {
     await agent.delete(`/api/usuarios/${res.body.id}`).expect(200);
   });
 });
+
+describe('POST /api/logout', () => {
+  it('encerra a sessão atual', async () => {
+    const agent = request.agent(app);
+    await agent
+      .post('/api/login')
+      .send({ usuario: 'start', senha: 'start' })
+      .expect(200);
+
+    await agent.post('/api/logout').expect(200);
+
+    const res = await agent.get('/api/session');
+    expect(res.body.autenticado).toBe(false);
+  });
+});

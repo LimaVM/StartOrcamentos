@@ -450,7 +450,8 @@ function initPerfilPage() {
   });
   logoutBtn?.addEventListener('click', async () => {
     await fetch('/api/logout', { method: 'POST' });
-    location.reload();
+    usuarioAtual = null;
+    loginModal.classList.add('active');
   });
   carregarPerfil();
 }

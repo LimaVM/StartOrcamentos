@@ -262,6 +262,7 @@ app.post("/api/login", async (req, res) => {
 
 app.post("/api/logout", (req, res) => {
   req.session.destroy(() => {
+    res.clearCookie("connect.sid");
     res.json({ mensagem: "Logout realizado" });
   });
 });
