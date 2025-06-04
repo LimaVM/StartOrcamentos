@@ -17,7 +17,7 @@ Um aplicativo web progressivo (PWA) moderno para criação e gerenciamento de or
 - HTML5, CSS3 e JavaScript moderno
 - Express.js para o backend
 - Armazenamento de dados em JSON
-- Geração de PDF com html-pdf-node
+- Geração de PDF com Puppeteer
 - Service Worker para funcionalidades offline
 - Design responsivo com Flexbox e CSS Grid
 
@@ -64,9 +64,9 @@ O arquivo `variaveis_template.txt` contém todas as variáveis disponíveis para
    ```
 3. Inicie o servidor:
    ```
-   node server.js
+   npm start
    ```
-4. Acesse o aplicativo em `http://localhost:3000`
+4. O servidor escuta nas portas 80 e 443 (HTTPS). Acesse em `https://seu_dominio`
 
 ## Responsividade
 
@@ -87,6 +87,8 @@ O aplicativo é 100% responsivo e otimizado para:
 - Formulários mais intuitivos com feedback visual
 - Modais redesenhados com animações fluidas
 - Página "Sobre" com layout mais profissional
+- Dados em cache na memória para respostas mais rápidas
+- Instância única do Puppeteer reutilizada para gerar PDFs
 
 ## Licença
 
