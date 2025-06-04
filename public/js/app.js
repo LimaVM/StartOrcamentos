@@ -1357,6 +1357,10 @@ function filtrarProdutosSelecionaveis(termo) {
 async function baixarPdfOrcamento() {
   const orcamentoId = baixarPdfBtn.getAttribute("data-id");
   if (!orcamentoId) return;
+  if (!navigator.onLine) {
+    await gerarPdfOffline(orcamentoId, "download");
+    return;
+  }
   iniciarProgressoPdf();
   try {
     const response = await fetch(`/api/orcamentos/${orcamentoId}/pdf`);
@@ -1391,6 +1395,10 @@ async function baixarPdfOrcamento() {
 async function compartilharPdfOrcamento() {
   const orcamentoId = compartilharPdfBtn.getAttribute("data-id");
   if (!orcamentoId) return;
+  if (!navigator.onLine) {
+    await gerarPdfOffline(orcamentoId, "share");
+    return;
+  }
   iniciarProgressoPdf();
   try {
     const response = await fetch(`/api/orcamentos/${orcamentoId}/pdf`);
@@ -1452,6 +1460,45 @@ function imprimirOrcamento() {
     </html>
   `);
   janelaImpressao.document.close();
+}
+
+async function gerarPdfOffline(id, acao) {
+  iniciarProgressoPdf();
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    await doc.html(orcamentoPreview, { html2canvas: { scale: 0.8 } });
+    const blob = doc.output("blob");
+    if (acao === "share") {
+      const file = new File([blob], `orcamento_${id}.pdf`, { type: "application/pdf" });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: "Orçamento" });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `orcamento_${id}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+    } else if (acao === "download") {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `orcamento_${id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  } catch (err) {
+    console.error("Erro ao gerar PDF offline:", err);
+    mostrarToast("Erro ao gerar PDF offline");
+  } finally {
+    finalizarProgressoPdf();
+  }
 }
 
 // --- Funções Utilitárias --- //

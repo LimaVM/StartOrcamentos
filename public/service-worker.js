@@ -17,6 +17,7 @@ const INITIAL_CACHE_URLS = [
   '/index.html',
   '/css/style.css',
   '/js/app.js',
+  '/js/jspdf.umd.min.js',
   '/manifest.json',
   '/api/produtos',
   '/api/templates',
