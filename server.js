@@ -560,12 +560,11 @@ app.get("/api/orcamentos/:id/pdf", async (req, res, next) => {
       format: "A4",
       printBackground: true,
       // Margens reduzidas (ex: 10mm)
-      margin: { top: "10mm", right: "10mm", bottom: "10mm", left: "10mm" }, 
-      timeout: 90000 // Aumenta timeout para a geração do PDF
+      margin: { top: "10mm", right: "10mm", bottom: "10mm", left: "10mm" }
     });
     console.log(`[PDF ${orcamentoId}] PDF gerado e salvo em: ${caminhoArquivoPdf}`);
 
-    // 5. Fecha a página e o browser (movido para o finally)
+    // 5. Fecha apenas a página (o browser permanece aberto para reutilização)
 
     // 6. Atualiza o JSON do orçamento
     const index = orcamentos.findIndex((o) => o.id === orcamentoId);
@@ -593,7 +592,7 @@ app.get("/api/orcamentos/:id/pdf", async (req, res, next) => {
     next(error); 
 
   } finally {
-    // Garante que a página e o browser sejam fechados mesmo se ocorrer um erro
+    // Garante que a página seja fechada mesmo se ocorrer um erro
     if (page) {
         try {
             console.log(`[PDF ${orcamentoId}] Fechando página no finally...`);

@@ -577,6 +577,7 @@ input::placeholder, textarea::placeholder {
   background-color: var(--primary-color);
   color: white;
   box-shadow: var(--shadow-lg);
+  z-index: var(--z-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1431,6 +1432,35 @@ button:disabled,
 }
 
 .bottom-nav-item.active {
+  color: var(--primary-color);
+}
+
+/* Seção Sobre */
+.about-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-lg);
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-lg);
+  margin-top: var(--space-lg);
+}
+
+.feature-card {
+  background-color: var(--background-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-md);
+}
+
+.feature-card .material-icons {
+  font-size: 2rem;
+  margin-bottom: var(--space-xs);
   color: var(--primary-color);
 }
 

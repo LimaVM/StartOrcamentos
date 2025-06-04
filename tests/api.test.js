@@ -8,3 +8,10 @@ describe('GET /api/produtos', () => {
     expect(Array.isArray(res.body)).toBe(true);
   });
 });
+
+describe('GET /api/produtos/:id', () => {
+  it('retorna 404 para ID inexistente', async () => {
+    const res = await request(app).get('/api/produtos/nonexistent-id');
+    expect(res.status).toBe(404);
+  });
+});

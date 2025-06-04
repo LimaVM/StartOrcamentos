@@ -226,10 +226,13 @@ A geração de PDF é realizada usando o Puppeteer para renderizar o HTML em PDF
      printBackground: true
    };
    ```
-4. Gera o PDF a partir do HTML:
+4. Gera o PDF a partir do HTML usando Puppeteer:
    ```javascript
-   const file = { content: htmlGerado };
-   const pdfBuffer = await htmlPdf.generatePdf(file, options);
+   const browser = await puppeteer.launch();
+   const page = await browser.newPage();
+   await page.setContent(htmlGerado);
+   const pdfBuffer = await page.pdf(options);
+   await browser.close();
    ```
 5. Salva o PDF no servidor:
    ```javascript
