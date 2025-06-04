@@ -453,6 +453,16 @@ input:focus, textarea:focus, select:focus {
   width: 100%;
 }
 
+/* Alinhamento para checkbox */
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+}
+.checkbox-group input[type="checkbox"] {
+  width: auto;
+  margin-right: 8px;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;

@@ -782,6 +782,15 @@ input::placeholder, textarea::placeholder {
   width: 100%;
 }
 
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.checkbox-group input[type="checkbox"] {
+  width: auto;
+}
+
 .form-group .helper-text {
   display: block;
   margin-top: var(--space-xs);
