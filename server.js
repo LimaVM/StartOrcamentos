@@ -735,6 +735,15 @@ async function renderizarHtmlOrcamento(orcamentoId) {
       console.warn("Logo não encontrado em public/images/logo/logo.jpeg");
   }
 
+  let vendedorNome = "";
+  try {
+      const usuarios = await obterUsuarios();
+      const vendedor = usuarios.find(u => u.id === orcamento.userId);
+      if (vendedor) vendedorNome = vendedor.usuario;
+  } catch (vendError) {
+      console.warn("Não foi possível determinar o vendedor do orçamento:", vendError);
+  }
+
   // Prepara os dados para o template EJS
   const dadosParaEJS = {
     orcamento: {
@@ -752,6 +761,7 @@ async function renderizarHtmlOrcamento(orcamentoId) {
             imagemUrl: item.foto // Usa a string Base64 diretamente
         }))
     },
+    vendedor: vendedorNome,
     // Disponibiliza funções de formatação para o template
     formatarMoeda: formatarMoeda,
     formatarData: formatarData,

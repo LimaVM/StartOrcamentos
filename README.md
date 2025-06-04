@@ -52,6 +52,7 @@ O arquivo `variaveis_template.txt` contém todas as variáveis disponíveis para
 - `$telefonecliente` - Telefone do cliente
 - `$emailcliente` - Email do cliente
 - `$dataorcamento` - Data de criação do orçamento
+- `$vendedor` - Nome do usuário que gerou o orçamento
 - `$observacoes` - Observações adicionais
 - `$valortotal` - Valor total do orçamento
 - `$tabelaprodutos` - Tabela HTML com os produtos do orçamento
