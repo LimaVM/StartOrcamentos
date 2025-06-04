@@ -1592,6 +1592,10 @@ button:disabled,
   #overlay {
     display: none !important;
   }
+  /* Oculta o cabeçalho do menu lateral para evitar duplicação de logo */
+  .menu-header {
+    display: none;
+  }
   .app-header {
     left: 300px;
     width: calc(100% - 300px);
