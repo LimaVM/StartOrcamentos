@@ -44,6 +44,9 @@ const loginSenha = document.getElementById("login-senha");
 // Elementos da página inicial
 const cardProdutos = document.getElementById("card-produtos");
 const cardOrcamentos = document.getElementById("card-orcamentos");
+const cardUsuarios = document.getElementById("card-usuarios");
+const cardRegistros = document.getElementById("card-registros");
+const cardPerfil = document.getElementById("card-perfil");
 
 // Elementos da página de produtos
 const addProdutoBtn = document.getElementById("add-produto-btn");
@@ -347,6 +350,15 @@ function initModals() {
 function initHomePage() {
   cardProdutos.addEventListener("click", () => navigateToPage("produtos"));
   cardOrcamentos.addEventListener("click", () => navigateToPage("orcamentos"));
+  if (cardUsuarios) {
+    cardUsuarios.addEventListener("click", () => navigateToPage("usuarios"));
+  }
+  if (cardRegistros) {
+    cardRegistros.addEventListener("click", () => navigateToPage("registros"));
+  }
+  if (cardPerfil) {
+    cardPerfil.addEventListener("click", () => navigateToPage("perfil"));
+  }
 }
 
 function initProdutosPage() {

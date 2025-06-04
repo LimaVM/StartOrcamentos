@@ -10,7 +10,6 @@ Um aplicativo web progressivo (PWA) moderno para criação e gerenciamento de or
 - Múltiplos templates de orçamento
 - Geração de PDF para download e compartilhamento
 - Funcionamento offline
-- Atalhos de aplicativo para acesso rápido às páginas
 - Interface intuitiva e amigável
 - Sistema de login com usuários e permissões (admin pode gerenciar dados)
 
