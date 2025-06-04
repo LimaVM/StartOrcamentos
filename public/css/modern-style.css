@@ -79,6 +79,19 @@
   --z-loading: 500;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-color: #f9fafb;
+    --text-secondary: #d1d5db;
+    --text-tertiary: #9ca3af;
+    --background-color: #1f2937;
+    --background-secondary: #111827;
+    --background-tertiary: #374151;
+    --border-color: #374151;
+    --border-light: #4b5563;
+  }
+}
+
 /* Reset e estilos base */
 *, *::before, *::after {
   margin: 0;
@@ -1466,6 +1479,14 @@ button:disabled,
   align-items: center;
   text-align: center;
   gap: var(--space-lg);
+}
+
+.about-info {
+  max-width: 600px;
+}
+
+.about-info p {
+  margin-top: var(--space-xs);
 }
 
 .features-grid {
