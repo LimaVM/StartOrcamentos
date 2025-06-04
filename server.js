@@ -1048,7 +1048,8 @@ if (require.main === module) {
   // Redirecionador HTTP → HTTPS
   const redirectApp = express();
   redirectApp.use((req, res) => {
-    const host = req.headers.host.replace(/:\d+$/, "");
+    const hostHeader = req.headers.host || "";
+    const host = hostHeader.replace(/:\d+$/, "");
     res.redirect(`https://${host}${req.url}`);
   });
 
