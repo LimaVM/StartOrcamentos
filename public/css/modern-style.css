@@ -1578,6 +1578,12 @@ button:disabled,
     font-size: 20px;
     vertical-align: middle;
   }
+  .bottom-nav-item .material-icons {
+    font-size: 1rem;
+  }
+  .bottom-nav-item span:last-child {
+    font-size: 0.6rem;
+  }
 }
 
 

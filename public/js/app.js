@@ -348,17 +348,22 @@ function initModals() {
 }
 
 function initHomePage() {
-  cardProdutos.addEventListener("click", () => navigateToPage("produtos"));
-  cardOrcamentos.addEventListener("click", () => navigateToPage("orcamentos"));
-  if (cardUsuarios) {
-    cardUsuarios.addEventListener("click", () => navigateToPage("usuarios"));
-  }
-  if (cardRegistros) {
-    cardRegistros.addEventListener("click", () => navigateToPage("registros"));
-  }
-  if (cardPerfil) {
-    cardPerfil.addEventListener("click", () => navigateToPage("perfil"));
-  }
+  // Delegação de eventos para garantir funcionamento mesmo com elementos ocultos
+  const dashboard = document.querySelector('.dashboard');
+  if (!dashboard) return;
+  const map = {
+    'card-produtos': 'produtos',
+    'card-orcamentos': 'orcamentos',
+    'card-usuarios': 'usuarios',
+    'card-registros': 'registros',
+    'card-perfil': 'perfil',
+  };
+  dashboard.addEventListener('click', (e) => {
+    const card = e.target.closest('.card');
+    if (!card) return;
+    const pageId = map[card.id];
+    if (pageId) navigateToPage(pageId);
+  });
 }
 
 function initProdutosPage() {
