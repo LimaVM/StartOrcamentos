@@ -502,7 +502,8 @@ app.get("/api/orcamentos/:id", authRequired, async (req, res, next) => {
 
 app.post("/api/orcamentos", authRequired, async (req, res, next) => {
   try {
-    const { nanoid } = await import("nanoid");
+    const { customAlphabet } = await import("nanoid");
+    const gerarCodigo = customAlphabet("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 4);
     const {
       nomeCliente,
       enderecoCliente,
@@ -567,7 +568,7 @@ app.post("/api/orcamentos", authRequired, async (req, res, next) => {
     const valorTotalFinal = valorTotalBruto - descontoCalculado;
 
     const novoOrcamento = {
-      id: nanoid(5),
+      id: gerarCodigo(),
       nomeCliente,
       enderecoCliente: enderecoCliente || "",
       telefoneCliente: telefoneCliente || "",

@@ -1,6 +1,6 @@
 Variáveis disponíveis para uso nos templates HTML de orçamento:
 
-$id - Identificador único do orçamento (código alfanumérico de 5 caracteres).
+$id - Identificador único do orçamento (código alfanumérico de 4 caracteres).
 $nomedocliente - Nome completo do cliente.
 $enderecocliente - Endereço do cliente (pode estar vazio).
 $telefonecliente - Número de telefone do cliente (pode estar vazio).

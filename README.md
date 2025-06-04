@@ -46,7 +46,7 @@ orcamento-pwa/
 
 O arquivo `variaveis_template.txt` contém todas as variáveis disponíveis para uso nos templates de orçamento:
 
-- `$id` - Identificador único do orçamento (código alfanumérico de 5 caracteres)
+- `$id` - Identificador único do orçamento (código alfanumérico de 4 caracteres)
 - `$nomedocliente` - Nome do cliente
 - `$enderecocliente` - Endereço do cliente
 - `$telefonecliente` - Telefone do cliente
