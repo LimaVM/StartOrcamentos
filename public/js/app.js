@@ -119,6 +119,31 @@ const valorDescontoInput = document.getElementById("valor-desconto");
 const valorDescontoHelper = document.getElementById("valor-desconto-helper");
 const templatesLista = document.getElementById("templates-lista");
 
+function validarClienteNome(marcar = true) {
+  const grupo = clienteNome.closest(".form-group");
+  const valido = clienteNome.value.trim() !== "";
+  if (grupo && marcar) {
+    grupo.classList.toggle("error", !valido);
+  } else if (grupo && !marcar) {
+    grupo.classList.remove("error");
+  }
+  return valido;
+}
+
+function atualizarEstadoBotaoProximo() {
+  const tabAtual = document.querySelector(".tab-btn.active");
+  if (tabAtual && tabAtual.getAttribute("data-tab") === "cliente") {
+    nextTabBtn.disabled = !clienteNome.value.trim();
+  } else {
+    nextTabBtn.disabled = false;
+  }
+  if (nextTabBtn.disabled) {
+    nextTabBtn.classList.add("disabled");
+  } else {
+    nextTabBtn.classList.remove("disabled");
+  }
+}
+
 // Elementos do modal de seleção de produtos
 const selecionarProdutosModal = document.getElementById("selecionar-produtos-modal");
 const selecionarProdutosSearch = document.getElementById("selecionar-produtos-search");
@@ -494,6 +519,10 @@ function initOrcamentoModal() {
   });
   prevTabBtn.addEventListener("click", navegarTabAnterior);
   nextTabBtn.addEventListener("click", navegarProximaTab);
+  clienteNome.addEventListener("input", () => {
+    validarClienteNome();
+    atualizarEstadoBotaoProximo();
+  });
   addProdutosBtn.addEventListener("click", abrirModalSelecionarProdutos);
 
   tipoDescontoSelect.addEventListener("change", () => {
@@ -511,9 +540,11 @@ function initOrcamentoModal() {
 
   orcamentoForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (!clienteNome.value) {
+    if (!validarClienteNome()) {
       mostrarToast("Preencha o nome do cliente");
       ativarTab("cliente");
+      clienteNome.focus();
+      atualizarEstadoBotaoProximo();
       return;
     }
     if (produtosSelecionados.length === 0) {
@@ -579,6 +610,7 @@ function ativarTab(tabId) {
   tabBtns.forEach((b) => b.classList.toggle("active", b.getAttribute("data-tab") === tabId));
   tabContents.forEach((content) => content.style.display = content.id === `tab-${tabId}` ? "block" : "none");
   atualizarBotoesNavegacaoTab();
+  atualizarEstadoBotaoProximo();
 }
 
 function navegarTabAnterior() {
@@ -593,9 +625,13 @@ function navegarProximaTab() {
   const tabAtual = document.querySelector(".tab-btn.active");
   const proximaTab = tabAtual.nextElementSibling;
   if (proximaTab && proximaTab.classList.contains("tab-btn")) {
-    if (tabAtual.getAttribute("data-tab") === "cliente" && !clienteNome.value.trim()) {
-      mostrarToast("Preencha o nome do cliente");
-      return;
+    if (tabAtual.getAttribute("data-tab") === "cliente") {
+      if (!validarClienteNome()) {
+        clienteNome.focus();
+        mostrarToast("Preencha o nome do cliente");
+        atualizarEstadoBotaoProximo();
+        return;
+      }
     }
     ativarTab(proximaTab.getAttribute("data-tab"));
   }
@@ -608,6 +644,7 @@ function atualizarBotoesNavegacaoTab() {
   prevTabBtn.disabled = isPrimeiraTab;
   nextTabBtn.style.display = isUltimaTab ? "none" : "inline-flex";
   submitOrcamentoBtn.style.display = isUltimaTab ? "inline-flex" : "none";
+  atualizarEstadoBotaoProximo();
 }
 
 function initSelecionarProdutosModal() {
@@ -967,6 +1004,8 @@ function abrirModalOrcamento() {
   clienteCpf.value = "";
   orcamentoModal.classList.add("active");
   isEditing = true;
+  validarClienteNome(false);
+  atualizarEstadoBotaoProximo();
 }
 
 async function abrirModalEditarOrcamento(id) {
@@ -1011,6 +1050,8 @@ async function abrirModalEditarOrcamento(id) {
     });
     orcamentoModal.classList.add("active");
     isEditing = true;
+    validarClienteNome(false);
+    atualizarEstadoBotaoProximo();
   } catch (err) {
     console.error("Erro ao abrir orçamento para edição", err);
     mostrarToast("Erro ao carregar orçamento");

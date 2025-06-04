@@ -760,6 +760,7 @@ input::placeholder, textarea::placeholder {
 .modal-body {
   padding: var(--space-lg);
   overflow-y: auto;
+  overflow-x: hidden;
   flex-grow: 1;
   /* max-height: calc(90vh - 70px - 70px); */ /* Ajuste se houver footer fixo no modal */
 }
@@ -922,10 +923,18 @@ input::placeholder, textarea::placeholder {
 }
 
 button:disabled,
-.btn:disabled {
-  opacity: 0.6;
+.btn:disabled,
+.btn.disabled {
+  opacity: 1;
   cursor: not-allowed;
   pointer-events: none;
+  background-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.btn-primary:disabled {
+  background-color: var(--border-color);
+  color: var(--text-secondary);
 }
 
 /* Input de arquivo */
@@ -971,7 +980,7 @@ button:disabled,
 
 /* Tabs */
 .form-tabs {
-  display: flex;
+  display: none;
   margin-bottom: var(--space-lg);
   border-bottom: 1px solid var(--border-light);
 }
