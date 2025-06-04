@@ -461,6 +461,9 @@
           <button type="button" id="baixar-pdf-orcamento" class="btn btn-secondary">
             <span class="material-icons">download</span> Baixar PDF
           </button>
+          <button type="button" id="compartilhar-orcamento" class="btn btn-secondary">
+            <span class="material-icons">share</span> Compartilhar
+          </button>
           <button type="button" id="imprimir-orcamento" class="btn btn-primary">
             <span class="material-icons">print</span> Imprimir
           </button>
@@ -478,6 +481,11 @@
   <!-- Spinner de carregamento (HTML Adicionado) -->
   <div id="loading-spinner" class="loading-overlay">
     <div class="spinner"></div>
+  </div>
+
+  <!-- Barra de progresso para geração de PDF -->
+  <div id="pdf-progress-overlay" class="progress-overlay">
+    <div id="pdf-progress-bar" class="progress-bar"></div>
   </div>
 
   <!-- Scripts -->

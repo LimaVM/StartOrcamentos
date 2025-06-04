@@ -26,6 +26,8 @@ const bottomNavItems = document.querySelectorAll(".bottom-nav-item");
 const pages = document.querySelectorAll(".page");
 const toast = document.getElementById("toast");
 const loadingSpinner = document.getElementById("loading-spinner");
+const pdfProgressOverlay = document.getElementById("pdf-progress-overlay");
+const pdfProgressBar = document.getElementById("pdf-progress-bar");
 
 // Elementos da página inicial
 const cardProdutos = document.getElementById("card-produtos");
@@ -86,6 +88,7 @@ const visualizarOrcamentoModal = document.getElementById("visualizar-orcamento-m
 const orcamentoPreview = document.getElementById("orcamento-preview");
 const imprimirOrcamentoBtn = document.getElementById("imprimir-orcamento");
 const baixarPdfBtn = document.getElementById("baixar-pdf-orcamento");
+const compartilharPdfBtn = document.getElementById("compartilhar-orcamento");
 
 // Botões de fechar modal
 const modalCloseBtns = document.querySelectorAll(".modal-close");
@@ -366,6 +369,10 @@ function navegarProximaTab() {
   const tabAtual = document.querySelector(".tab-btn.active");
   const proximaTab = tabAtual.nextElementSibling;
   if (proximaTab && proximaTab.classList.contains("tab-btn")) {
+    if (tabAtual.getAttribute("data-tab") === "cliente" && !clienteNome.value.trim()) {
+      mostrarToast("Preencha o nome do cliente");
+      return;
+    }
     ativarTab(proximaTab.getAttribute("data-tab"));
   }
 }
@@ -393,6 +400,9 @@ function initSelecionarProdutosModal() {
 function initVisualizarOrcamentoModal() {
   imprimirOrcamentoBtn.addEventListener("click", imprimirOrcamento);
   baixarPdfBtn.addEventListener("click", baixarPdfOrcamento);
+  if (compartilharPdfBtn) {
+    compartilharPdfBtn.addEventListener("click", compartilharPdfOrcamento);
+  }
 }
 
 // --- Funções de Carregamento de Dados --- //
@@ -727,7 +737,7 @@ function abrirModalSelecionarProdutos() {
 
 async function abrirModalVisualizarOrcamento(id) {
   if (!id) return;
-  mostrarLoading();
+  iniciarProgressoPdf();
   orcamentoPreview.innerHTML = `<div class="loading"><div class="spinner"></div><p>Gerando pré-visualização...</p></div>`;
   visualizarOrcamentoModal.classList.add("active");
 
@@ -740,12 +750,13 @@ async function abrirModalVisualizarOrcamento(id) {
     orcamentoPreview.innerHTML = data.html;
     imprimirOrcamentoBtn.setAttribute("data-id", id);
     baixarPdfBtn.setAttribute("data-id", id);
+    if (compartilharPdfBtn) compartilharPdfBtn.setAttribute("data-id", id);
   } catch (error) {
     console.error("Erro ao visualizar orçamento:", error);
     orcamentoPreview.innerHTML = `<p class="error">Erro ao carregar orçamento: ${error.message}</p>`;
     mostrarToast("Erro ao carregar orçamento.");
   } finally {
-    esconderLoading();
+    finalizarProgressoPdf();
   }
 }
 
@@ -858,7 +869,7 @@ function filtrarProdutosSelecionaveis(termo) {
 async function baixarPdfOrcamento() {
   const orcamentoId = baixarPdfBtn.getAttribute("data-id");
   if (!orcamentoId) return;
-  mostrarLoading();
+  iniciarProgressoPdf();
   try {
     const response = await fetch(`/api/orcamentos/${orcamentoId}/pdf`);
     if (!response.ok) {
@@ -885,7 +896,44 @@ async function baixarPdfOrcamento() {
     console.error("Erro ao baixar PDF:", error);
     mostrarToast(`Erro ao baixar PDF: ${error.message}`);
   } finally {
-    esconderLoading();
+    finalizarProgressoPdf();
+  }
+}
+
+async function compartilharPdfOrcamento() {
+  const orcamentoId = compartilharPdfBtn.getAttribute("data-id");
+  if (!orcamentoId) return;
+  iniciarProgressoPdf();
+  try {
+    const response = await fetch(`/api/orcamentos/${orcamentoId}/pdf`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || `Erro ${response.status} ao gerar PDF`);
+    }
+    const blob = await response.blob();
+    const file = new File([blob], `orcamento_${orcamentoId}.pdf`, { type: "application/pdf" });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: "Orçamento",
+        text: "Confira este orçamento",
+      });
+    } else {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `orcamento_${orcamentoId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      mostrarToast("PDF baixado. Compartilhe manualmente.");
+    }
+  } catch (error) {
+    console.error("Erro ao compartilhar PDF:", error);
+    mostrarToast(`Erro ao compartilhar PDF: ${error.message}`);
+  } finally {
+    finalizarProgressoPdf();
   }
 }
 
@@ -945,6 +993,30 @@ function mostrarLoading() {
 
 function esconderLoading() {
   if (loadingSpinner) loadingSpinner.style.display = "none";
+}
+
+let pdfProgressInterval = null;
+function iniciarProgressoPdf() {
+  if (!pdfProgressOverlay || !pdfProgressBar) return;
+  pdfProgressBar.style.width = "0%";
+  pdfProgressOverlay.classList.add("active");
+  let progress = 0;
+  pdfProgressInterval = setInterval(() => {
+    progress += Math.random() * 10;
+    if (progress > 90) progress = 90;
+    pdfProgressBar.style.width = progress + "%";
+  }, 200);
+}
+
+function finalizarProgressoPdf() {
+  if (!pdfProgressOverlay || !pdfProgressBar) return;
+  if (pdfProgressInterval) clearInterval(pdfProgressInterval);
+  pdfProgressBar.style.width = "100%";
+  setTimeout(() => {
+    pdfProgressOverlay.classList.remove("active");
+    pdfProgressBar.style.width = "0%";
+    pdfProgressInterval = null;
+  }, 400);
 }
 
 // --- Service Worker e PWA --- //
