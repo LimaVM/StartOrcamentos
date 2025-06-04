@@ -18,6 +18,8 @@ const INITIAL_CACHE_URLS = [
   '/css/style.css',
   '/js/app.js',
   '/manifest.json',
+  '/api/produtos',
+  '/api/templates',
   '/images/placeholder.png',
   '/images/icons/icon-72x72.png',
   '/images/icons/icon-96x96.png',
@@ -34,7 +36,7 @@ const INITIAL_CACHE_URLS = [
 // Instalação do service worker
 self.addEventListener('install', event => {
   console.log('Service Worker instalando...');
-  
+
   // Pré-cache de recursos estáticos
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -42,12 +44,27 @@ self.addEventListener('install', event => {
         console.log('Cache aberto');
         return cache.addAll(INITIAL_CACHE_URLS);
       })
+      .then(precacheApiData)
       .then(() => {
         console.log('Recursos iniciais em cache');
         return self.skipWaiting();
       })
   );
 });
+
+async function precacheApiData() {
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    const [produtos, templates] = await Promise.all([
+      fetch('/api/produtos'),
+      fetch('/api/templates')
+    ]);
+    if (produtos.ok) await cache.put('/api/produtos', produtos.clone());
+    if (templates.ok) await cache.put('/api/templates', templates.clone());
+  } catch (err) {
+    console.warn('Falha ao pré-carregar dados da API', err);
+  }
+}
 
 // Ativação do service worker
 self.addEventListener('activate', event => {
@@ -76,7 +93,24 @@ self.addEventListener('fetch', event => {
   // Ignora requisições não GET
   if (event.request.method !== 'GET') return;
   
-  // Ignora requisições para a API
+
+  // Responde com cache para produtos e templates quando offline
+  if (event.request.url.includes('/api/produtos') || event.request.url.includes('/api/templates')) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response && response.status === 200) {
+            const resClone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, resClone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Ignora outras requisições de API
   if (event.request.url.includes('/api/')) {
     return;
   }

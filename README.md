@@ -9,7 +9,7 @@ Um aplicativo web progressivo (PWA) moderno para criação e gerenciamento de or
 - Criação de orçamentos personalizados
 - Múltiplos templates de orçamento
 - Geração de PDF para download e compartilhamento
-- Funcionamento offline
+- Funcionamento offline (consulta a produtos e templates mesmo sem conexão, sem cadastro de novos dados)
 - Interface intuitiva e amigável
 - Sistema de login com usuários e permissões (admin pode gerenciar dados)
 
@@ -95,6 +95,7 @@ O aplicativo é 100% responsivo e otimizado para:
 - Dados em cache na memória para respostas mais rápidas
 - Instância única do Puppeteer reutilizada para gerar PDFs
 - Cada usuário pode atualizar seu próprio perfil (nome, senha e foto)
+- Funciona offline permitindo apenas o uso de produtos e templates já cadastrados
 
 ## Licença
 

@@ -103,6 +103,14 @@ const fotoPreviewContainer = document.getElementById("foto-preview-container"); 
 const fotoPreview = document.getElementById("foto-preview");
 const selectFotoBtn = document.getElementById("select-foto-btn");
 
+function atualizarDisponibilidadeOnline() {
+  const online = navigator.onLine;
+  if (addProdutoBtn) addProdutoBtn.disabled = !online;
+}
+
+window.addEventListener('online', atualizarDisponibilidadeOnline);
+window.addEventListener('offline', atualizarDisponibilidadeOnline);
+
 // Elementos do modal de orçamento
 const orcamentoModal = document.getElementById("orcamento-modal");
 const orcamentoForm = document.getElementById("orcamento-form");
@@ -212,7 +220,7 @@ function validarCNPJ(cnpj) {
 
 async function buscarCep() {
   const cep = clienteCep.value.replace(/\D/g, '');
-  if (cep.length !== 8) return;
+  if (cep.length !== 8 || !navigator.onLine) return;
   try {
     const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
     if (!res.ok) return;
@@ -341,6 +349,7 @@ function iniciarAplicacao() {
  */
 document.addEventListener("DOMContentLoaded", () => {
   updateLayout();
+  atualizarDisponibilidadeOnline();
   verificarSessao();
 });
 
@@ -573,6 +582,10 @@ function initProdutoModal() {
 
   produtoForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (!navigator.onLine) {
+      mostrarToast('Função indisponível offline');
+      return;
+    }
     mostrarLoading();
     try {
       const formData = new FormData();
@@ -653,6 +666,10 @@ function initOrcamentoModal() {
 
   orcamentoForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (!navigator.onLine) {
+      mostrarToast('Função indisponível offline');
+      return;
+    }
     if (!validarClienteNome()) {
       mostrarToast("Preencha o nome do cliente");
       ativarTab("cliente");
@@ -1073,6 +1090,10 @@ function renderizarProdutosSelecionadosNoForm() {
 // --- Funções de Abertura de Modais --- //
 
 async function abrirModalProduto(id = null) {
+  if (!navigator.onLine) {
+    mostrarToast('Função indisponível offline');
+    return;
+  }
   produtoForm.reset();
   produtoId.value = "";
   produtoFotoInput.value = ""; // Limpa seleção de arquivo anterior
@@ -1228,6 +1249,10 @@ async function confirmarExclusaoProduto(id) {
 }
 
 async function excluirProduto(id) {
+  if (!navigator.onLine) {
+    mostrarToast('Função indisponível offline');
+    return;
+  }
   mostrarLoading();
   try {
     const response = await fetch(`/api/produtos/${id}`, { method: "DELETE" });
@@ -1251,6 +1276,10 @@ async function confirmarExclusaoOrcamento(id) {
 }
 
 async function excluirOrcamento(id) {
+  if (!navigator.onLine) {
+    mostrarToast('Função indisponível offline');
+    return;
+  }
   mostrarLoading();
   try {
     const response = await fetch(`/api/orcamentos/${id}`, { method: "DELETE" });

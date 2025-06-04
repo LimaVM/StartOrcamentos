@@ -7,7 +7,7 @@ Este documento explica detalhadamente a lógica de funcionamento do aplicativo S
 O aplicativo segue uma arquitetura cliente-servidor simples:
 
 1. **Backend (Node.js + Express)**: Responsável pelo armazenamento e manipulação dos dados, além de servir o frontend.
-2. **Frontend (HTML + CSS + JavaScript puro)**: Interface do usuário, com funcionalidades PWA para uso offline.
+2. **Frontend (HTML + CSS + JavaScript puro)**: Interface do usuário, com funcionalidades PWA para uso offline (consulta apenas a dados já existentes quando sem conexão).
 3. **Armazenamento (JSON)**: Todos os dados são armazenados em arquivos JSON, sem uso de banco de dados.
 
 ## Fluxo de Dados
@@ -174,7 +174,7 @@ O frontend é responsável por:
 O service worker é responsável por:
 
 1. **Cache de recursos**: Armazena recursos estáticos para uso offline
-2. **Estratégias de cache**: Define como os recursos são buscados (cache ou rede)
+2. **Estratégias de cache**: Define como os recursos são buscados (cache ou rede) e mantém cópias dos produtos e templates para uso offline
 3. **Instalação e ativação**: Gerencia o ciclo de vida do service worker
 
 ## Substituição de Variáveis nos Templates
