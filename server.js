@@ -68,6 +68,7 @@ app.use(
     secret: "startorcamentos-secret",
     resave: false,
     saveUninitialized: false,
+    cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 }, // mantém sessão por 30 dias
   })
 );
 

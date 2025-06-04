@@ -289,21 +289,38 @@ async function verificarSessao() {
     const data = await res.json();
     if (data.autenticado) {
       usuarioAtual = data.usuario;
+      localStorage.setItem('usuarioAtual', JSON.stringify(usuarioAtual));
       iniciarAplicacao();
       configurarMenuAdmin();
       loginModal.classList.remove('active');
     } else {
-      loginModal.classList.add('active');
-      if (loginForm) {
-        loginForm.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          await realizarLogin();
-        });
+      const stored = localStorage.getItem('usuarioAtual');
+      if (stored) {
+        usuarioAtual = JSON.parse(stored);
+        iniciarAplicacao();
+        configurarMenuAdmin();
+        loginModal.classList.remove('active');
+      } else {
+        loginModal.classList.add('active');
+        if (loginForm) {
+          loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await realizarLogin();
+          });
+        }
       }
     }
   } catch (e) {
-    console.error('Falha ao verificar sessão', e);
-    loginModal.classList.add('active');
+    const stored = localStorage.getItem('usuarioAtual');
+    if (stored) {
+      usuarioAtual = JSON.parse(stored);
+      iniciarAplicacao();
+      configurarMenuAdmin();
+      loginModal.classList.remove('active');
+    } else {
+      console.error('Falha ao verificar sessão', e);
+      loginModal.classList.add('active');
+    }
   }
 }
 
@@ -316,6 +333,7 @@ async function realizarLogin() {
     });
     if (res.ok) {
       usuarioAtual = await res.json();
+      localStorage.setItem('usuarioAtual', JSON.stringify(usuarioAtual));
       configurarMenuAdmin();
       loginModal.classList.remove('active');
       iniciarAplicacao();
@@ -524,6 +542,17 @@ function initPerfilPage() {
         perfilFotoPreview.src = ev.target.result;
       };
       reader.readAsDataURL(e.target.files[0]);
+
+      const formData = new FormData();
+      formData.append('foto', e.target.files[0]);
+      fetch('/api/usuarios/me', { method: 'PUT', body: formData })
+        .then(res => res.ok ? res.json() : Promise.reject())
+        .then(user => {
+          usuarioAtual = { ...usuarioAtual, ...user };
+          localStorage.setItem('usuarioAtual', JSON.stringify(usuarioAtual));
+          mostrarToast('Foto atualizada');
+        })
+        .catch(() => mostrarToast('Erro ao atualizar foto'));
     }
   });
   perfilForm.addEventListener('submit', async (e) => {
@@ -551,6 +580,7 @@ function initPerfilPage() {
   logoutBtn?.addEventListener('click', async () => {
     await fetch('/api/logout', { method: 'POST' });
     usuarioAtual = null;
+    localStorage.removeItem('usuarioAtual');
     loginModal.classList.add('active');
   });
   carregarPerfil();
