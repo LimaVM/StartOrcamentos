@@ -14,6 +14,8 @@ let templatesCache = [];
 let orcamentosCache = [];
 let produtosSelecionados = []; // Formato: { id, nome, valorUnitario, quantidade, foto }
 let deferredPrompt = null;
+let isEditing = false; // Indica se um formulário de produto ou orçamento está aberto
+let currentPage = "home"; // Página atual para controle do histórico
 
 // Elementos DOM frequentemente acessados
 const appContent = document.getElementById("app-content");
@@ -98,6 +100,9 @@ const modalCancelBtns = document.querySelectorAll(".modal-cancel");
  * Inicializa o aplicativo quando o DOM estiver carregado
  */
 document.addEventListener("DOMContentLoaded", () => {
+  const initial = window.location.hash.replace("#", "") || "home";
+  navigateToPage(initial, false);
+  history.replaceState({ pageId: initial }, "", `#${initial}`);
   initNavigation();
   initModals();
   initHomePage();
@@ -105,6 +110,18 @@ document.addEventListener("DOMContentLoaded", () => {
   initOrcamentosPage();
   carregarDadosIniciais();
   initInstallPrompt();
+});
+
+window.addEventListener("popstate", (e) => {
+  const pageId = e.state?.pageId || "home";
+  navigateToPage(pageId, false);
+});
+
+window.addEventListener("beforeunload", (e) => {
+  if (isEditing) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
 });
 
 /**
@@ -158,23 +175,48 @@ function fecharMenu() {
   overlay.classList.remove("active");
 }
 
-function navigateToPage(pageId) {
+function navigateToPage(pageId, push = true) {
+  if (currentPage === pageId) return;
+  if (!confirmExitIfEditing()) return;
   menuItems.forEach((i) => i.classList.toggle("active", i.getAttribute("data-page") === pageId));
   bottomNavItems.forEach((i) => i.classList.toggle("active", i.getAttribute("data-page") === pageId));
   pages.forEach((page) => page.classList.toggle("active", page.id === pageId));
+  currentPage = pageId;
+  if (push) {
+    history.pushState({ pageId }, "", `#${pageId}`);
+  }
+}
+
+function confirmExitIfEditing() {
+  if (isEditing) {
+    return confirm("Tem certeza que deseja sair? Dados não salvos serão perdidos.");
+  }
+  return true;
+}
+
+function fecharModalComConfirmacao(modal) {
+  if (!modal) return;
+  const requiresConfirm = modal.id === "produto-modal" || modal.id === "orcamento-modal";
+  if (requiresConfirm && !confirmExitIfEditing()) {
+    return;
+  }
+  modal.classList.remove("active");
+  if (requiresConfirm) {
+    isEditing = false;
+  }
 }
 
 function initModals() {
   modalCloseBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
       const modal = btn.closest(".modal");
-      if (modal) modal.classList.remove("active");
+      fecharModalComConfirmacao(modal);
     });
   });
   modalCancelBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
       const modal = btn.closest(".modal");
-      if (modal) modal.classList.remove("active");
+      fecharModalComConfirmacao(modal);
     });
   });
   initProdutoModal();
@@ -251,6 +293,7 @@ function initProdutoModal() {
 
       await carregarProdutos(); // Recarrega a lista para refletir a mudança
       produtoModal.classList.remove("active");
+      isEditing = false;
       mostrarToast("Produto salvo com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar produto:", error);
@@ -340,6 +383,7 @@ function initOrcamentoModal() {
       const orcamento = await response.json();
       await carregarOrcamentos();
       orcamentoModal.classList.remove("active");
+      isEditing = false;
       mostrarToast("Orçamento criado com sucesso!");
       abrirModalVisualizarOrcamento(orcamento.id);
     } catch (error) {
@@ -715,6 +759,7 @@ async function abrirModalProduto(id = null) {
     produtoValor.value = "";
   }
   produtoModal.classList.add("active");
+  isEditing = true;
 }
 
 function abrirModalOrcamento() {
@@ -728,6 +773,7 @@ function abrirModalOrcamento() {
   valorDescontoInput.value = "";
   valorDescontoInput.required = false;
   orcamentoModal.classList.add("active");
+  isEditing = true;
 }
 
 function abrirModalSelecionarProdutos() {
