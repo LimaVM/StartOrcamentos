@@ -10,7 +10,7 @@
     {
       "name": "Início",
       "short_name": "Início",
-      "description": "Abrir home",
+      "description": "Abrir início",
       "url": "/#home",
       "icons": [
         {
@@ -77,19 +77,6 @@
       "short_name": "Perfil",
       "description": "Meu perfil",
       "url": "/#perfil",
-      "icons": [
-        {
-          "src": "/images/icons/icon-96x96.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
-    },
-    {
-      "name": "Sobre",
-      "short_name": "Sobre",
-      "description": "Informações",
-      "url": "/#sobre",
       "icons": [
         {
           "src": "/images/icons/icon-96x96.png",
