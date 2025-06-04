@@ -620,7 +620,8 @@ button:disabled {
 }
 
 .selectable .item-card.selected {
-  border: 2px solid var(--primary-color);
+  background-color: var(--primary-light);
+  border: none;
 }
 
 .item-quantity {
