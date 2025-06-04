@@ -92,6 +92,7 @@ const tabContents = document.querySelectorAll(".tab-content");
 const prevTabBtn = document.getElementById("prev-tab");
 const nextTabBtn = document.getElementById("next-tab");
 const submitOrcamentoBtn = document.getElementById("submit-orcamento");
+const orcamentoIdInput = document.getElementById("orcamento-id");
 const clienteNome = document.getElementById("cliente-nome");
 const clienteEndereco = document.getElementById("cliente-endereco");
 const clienteTelefone = document.getElementById("cliente-telefone");
@@ -304,6 +305,9 @@ function fecharModalComConfirmacao(modal) {
     return;
   }
   modal.classList.remove("active");
+  if (modal.id === "visualizar-orcamento-modal") {
+    orcamentoPreview.innerHTML = "";
+  }
   if (requiresConfirm) {
     isEditing = false;
   }
@@ -481,8 +485,9 @@ function initOrcamentoModal() {
         valorDesconto: valorDescontoInput.value || 0,
       };
 
-      const response = await fetch("/api/orcamentos", {
-        method: "POST",
+      const orcId = orcamentoIdInput.value;
+      const response = await fetch(orcId ? `/api/orcamentos/${orcId}` : "/api/orcamentos", {
+        method: orcId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dadosOrcamento),
       });
@@ -496,7 +501,7 @@ function initOrcamentoModal() {
       await carregarOrcamentos();
       orcamentoModal.classList.remove("active");
       isEditing = false;
-      mostrarToast("Orçamento criado com sucesso!");
+      mostrarToast(orcId ? "Orçamento atualizado" : "Orçamento criado com sucesso!");
       abrirModalVisualizarOrcamento(orcamento.id);
     } catch (error) {
       console.error("Erro ao criar orçamento:", error);
@@ -695,6 +700,9 @@ function renderizarOrcamentos() {
           <button class="btn-icon view-orcamento" aria-label="Visualizar">
             <span class="material-icons">visibility</span>
           </button>
+          <button class="btn-icon edit-orcamento" aria-label="Editar">
+            <span class="material-icons">edit</span>
+          </button>
           <button class="btn-icon delete-orcamento" aria-label="Excluir">
             <span class="material-icons">delete</span>
           </button>
@@ -707,6 +715,14 @@ function renderizarOrcamentos() {
     btn.addEventListener("click", (e) => {
       const orcamentoId = e.target.closest(".item-card").getAttribute("data-id");
       abrirModalVisualizarOrcamento(orcamentoId);
+      e.stopPropagation();
+    });
+  });
+
+  orcamentosLista.querySelectorAll(".edit-orcamento").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      const orcamentoId = e.target.closest(".item-card").getAttribute("data-id");
+      abrirModalEditarOrcamento(orcamentoId);
       e.stopPropagation();
     });
   });
@@ -884,8 +900,58 @@ function abrirModalOrcamento() {
   valorDescontoGroup.style.display = "none";
   valorDescontoInput.value = "";
   valorDescontoInput.required = false;
+  orcamentoIdInput.value = "";
   orcamentoModal.classList.add("active");
   isEditing = true;
+}
+
+async function abrirModalEditarOrcamento(id) {
+  if (!id) return;
+  orcamentoForm.reset();
+  produtosSelecionados = [];
+  ativarTab("cliente");
+  mostrarLoading();
+  try {
+    const res = await fetch(`/api/orcamentos/${id}`);
+    if (!res.ok) throw new Error("Orçamento não encontrado");
+    const orc = await res.json();
+    orcamentoIdInput.value = id;
+    clienteNome.value = orc.nomeCliente;
+    clienteEndereco.value = orc.enderecoCliente || "";
+    clienteTelefone.value = orc.telefoneCliente || "";
+    clienteEmail.value = orc.emailCliente || "";
+    orcamentoObservacoes.value = orc.observacoes || "";
+    tipoDescontoSelect.value = orc.tipoDesconto || "nenhum";
+    if (orc.tipoDesconto && orc.valorDescontoInput) {
+      valorDescontoInput.value = orc.valorDescontoInput;
+      valorDescontoGroup.style.display = "block";
+      valorDescontoInput.required = true;
+    } else {
+      valorDescontoInput.value = "";
+      valorDescontoGroup.style.display = "none";
+      valorDescontoInput.required = false;
+    }
+    produtosSelecionados = orc.itens.map(it => ({
+      id: it.id,
+      nome: it.nome,
+      valorUnitario: it.valorUnitario,
+      quantidade: it.quantidade,
+      foto: it.foto
+    }));
+    renderizarProdutosSelecionadosNoForm();
+    await carregarTemplates();
+    renderizarTemplates();
+    templatesLista.querySelectorAll(".template-item").forEach(item => {
+      item.classList.toggle("selected", item.getAttribute("data-id") === orc.templateId);
+    });
+    orcamentoModal.classList.add("active");
+    isEditing = true;
+  } catch (err) {
+    console.error("Erro ao abrir orçamento para edição", err);
+    mostrarToast("Erro ao carregar orçamento");
+  } finally {
+    esconderLoading();
+  }
 }
 
 function abrirModalSelecionarProdutos() {

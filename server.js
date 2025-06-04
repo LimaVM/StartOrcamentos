@@ -601,6 +601,107 @@ app.post("/api/orcamentos", authRequired, async (req, res, next) => {
   }
 });
 
+app.put("/api/orcamentos/:id", authRequired, async (req, res, next) => {
+  try {
+    const orcamentoId = req.params.id;
+    const {
+      nomeCliente,
+      enderecoCliente,
+      telefoneCliente,
+      emailCliente,
+      templateId,
+      produtos: produtosInput,
+      observacoes,
+      tipoDesconto,
+      valorDesconto,
+    } = req.body;
+
+    if (!nomeCliente || !templateId || !Array.isArray(produtosInput) || produtosInput.length === 0) {
+      return res.status(400).json({ erro: "Dados incompletos. Nome do cliente, template e pelo menos um produto são obrigatórios" });
+    }
+
+    if (templateId.includes("..") || templateId.includes("/") || !templateId.endsWith(".html")) {
+      return res.status(400).json({ erro: "ID de template inválido" });
+    }
+    try {
+      await fs.access(path.join(__dirname, "templates", templateId));
+    } catch (error) {
+      return res.status(400).json({ erro: `Template ${templateId} não encontrado` });
+    }
+
+    const produtosCadastrados = await lerArquivoJSON(path.join(__dirname, "data", "produtos.json"));
+    let valorTotalBruto = 0;
+    const itens = [];
+    for (const item of produtosInput) {
+      const produto = produtosCadastrados.find(p => p.id === item.id);
+      if (!produto) {
+        return res.status(400).json({ erro: `Produto com ID ${item.id} não encontrado no cadastro.` });
+      }
+      const quantidade = parseInt(item.quantidade, 10) || 1;
+      const valorUnitario = parseFloat(produto.valor);
+      if (isNaN(quantidade) || quantidade <= 0 || isNaN(valorUnitario)) {
+        return res.status(400).json({ erro: `Dados inválidos para o produto ${produto.nome}.` });
+      }
+      const subtotal = valorUnitario * quantidade;
+      valorTotalBruto += subtotal;
+      itens.push({
+        id: produto.id,
+        nome: produto.nome,
+        descricao: produto.descricao || "",
+        valorUnitario,
+        quantidade,
+        valorTotal: subtotal,
+        foto: produto.foto
+      });
+    }
+
+    let descontoCalculado = 0;
+    const vlrDescInput = parseFloat(valorDesconto) || 0;
+    if (tipoDesconto === "percentual" && vlrDescInput > 0) {
+      descontoCalculado = (valorTotalBruto * vlrDescInput) / 100;
+    } else if (tipoDesconto === "fixo" && vlrDescInput > 0) {
+      descontoCalculado = vlrDescInput;
+    }
+    descontoCalculado = Math.min(descontoCalculado, valorTotalBruto);
+    const valorTotalFinal = valorTotalBruto - descontoCalculado;
+
+    const orcamentos = await lerArquivoJSON(path.join(__dirname, "data", "orcamentos.json"));
+    const index = orcamentos.findIndex(o => o.id === orcamentoId);
+    if (index === -1) {
+      return res.status(404).json({ erro: "Orçamento não encontrado" });
+    }
+    if (!req.session.usuario.admin && orcamentos[index].userId !== req.session.usuario.id) {
+      return res.status(403).json({ erro: "Acesso negado" });
+    }
+
+    orcamentos[index] = {
+      ...orcamentos[index],
+      nomeCliente,
+      enderecoCliente: enderecoCliente || "",
+      telefoneCliente: telefoneCliente || "",
+      emailCliente: emailCliente || "",
+      templateId,
+      itens,
+      valorTotalBruto,
+      tipoDesconto: tipoDesconto || null,
+      valorDescontoInput: valorDesconto || 0,
+      descontoCalculado,
+      valorTotal: valorTotalFinal,
+      observacoes: observacoes || "",
+      dataAtualizacao: new Date().toISOString(),
+    };
+
+    await escreverArquivoJSON(path.join(__dirname, "data", "orcamentos.json"), orcamentos);
+    await registrarAcao(req, `Editou orçamento ${orcamentoId}`);
+
+    const { itens: itensFoto, ...orcSemFoto } = orcamentos[index];
+    const itensSemFoto = itensFoto.map(({ foto, ...rest }) => rest);
+    res.json({ ...orcSemFoto, itens: itensSemFoto });
+  } catch (error) {
+    next(error);
+  }
+});
+
 /**
  * Função para preparar dados e renderizar HTML usando EJS.
  */
