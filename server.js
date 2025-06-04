@@ -547,6 +547,7 @@ app.post("/api/orcamentos", authRequired, async (req, res, next) => {
     const gerarCodigo = customAlphabet("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 4);
     const {
       nomeCliente,
+      cepCliente,
       enderecoCliente,
       telefoneCliente,
       emailCliente,
@@ -612,6 +613,7 @@ app.post("/api/orcamentos", authRequired, async (req, res, next) => {
     const novoOrcamento = {
       id: gerarCodigo(),
       nomeCliente,
+      cepCliente: cepCliente || "",
       enderecoCliente: enderecoCliente || "",
       telefoneCliente: telefoneCliente || "",
       emailCliente: emailCliente || "",
@@ -649,6 +651,7 @@ app.put("/api/orcamentos/:id", authRequired, async (req, res, next) => {
     const orcamentoId = req.params.id;
     const {
       nomeCliente,
+      cepCliente,
       enderecoCliente,
       telefoneCliente,
       emailCliente,
@@ -721,6 +724,7 @@ app.put("/api/orcamentos/:id", authRequired, async (req, res, next) => {
     orcamentos[index] = {
       ...orcamentos[index],
       nomeCliente,
+      cepCliente: cepCliente || "",
       enderecoCliente: enderecoCliente || "",
       telefoneCliente: telefoneCliente || "",
       emailCliente: emailCliente || "",

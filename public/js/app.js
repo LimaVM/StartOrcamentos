@@ -113,6 +113,7 @@ const nextTabBtn = document.getElementById("next-tab");
 const submitOrcamentoBtn = document.getElementById("submit-orcamento");
 const orcamentoIdInput = document.getElementById("orcamento-id");
 const clienteNome = document.getElementById("cliente-nome");
+const clienteCep = document.getElementById("cliente-cep");
 const clienteEndereco = document.getElementById("cliente-endereco");
 const clienteTelefone = document.getElementById("cliente-telefone");
 const clienteEmail = document.getElementById("cliente-email");
@@ -136,6 +137,96 @@ function validarClienteNome(marcar = true) {
   }
   return valido;
 }
+
+function validarTelefone(marcar = true) {
+  const grupo = clienteTelefone.closest('.form-group');
+  const digitos = clienteTelefone.value.replace(/\D/g, '');
+  const valido = digitos === '' || (digitos.length >= 10 && digitos.length <= 11);
+  if (grupo && marcar) {
+    grupo.classList.toggle('error', !valido);
+  } else if (grupo && !marcar) {
+    grupo.classList.remove('error');
+  }
+  return valido;
+}
+
+function validarCpfCnpj(marcar = true) {
+  const grupo = clienteCpf.closest('.form-group');
+  const valor = clienteCpf.value.replace(/\D/g, '');
+  let valido = true;
+  if (valor) {
+    if (valor.length === 11) {
+      valido = validarCPF(valor);
+    } else if (valor.length === 14) {
+      valido = validarCNPJ(valor);
+    } else {
+      valido = false;
+    }
+  }
+  if (grupo && marcar) {
+    grupo.classList.toggle('error', !valido);
+  } else if (grupo) {
+    grupo.classList.remove('error');
+  }
+  return valido;
+}
+
+function validarCPF(cpf) {
+  if (/^(\d)\1{10}$/.test(cpf)) return false;
+  let soma = 0;
+  for (let i = 0; i < 9; i++) soma += parseInt(cpf.charAt(i)) * (10 - i);
+  let resto = 11 - (soma % 11);
+  if (resto >= 10) resto = 0;
+  if (resto !== parseInt(cpf.charAt(9))) return false;
+  soma = 0;
+  for (let i = 0; i < 10; i++) soma += parseInt(cpf.charAt(i)) * (11 - i);
+  resto = 11 - (soma % 11);
+  if (resto >= 10) resto = 0;
+  return resto === parseInt(cpf.charAt(10));
+}
+
+function validarCNPJ(cnpj) {
+  if (/^(\d)\1{13}$/.test(cnpj)) return false;
+  let tamanho = cnpj.length - 2;
+  let numeros = cnpj.substring(0, tamanho);
+  const digitos = cnpj.substring(tamanho);
+  let soma = 0;
+  let pos = tamanho - 7;
+  for (let i = tamanho; i >= 1; i--) {
+    soma += numeros.charAt(tamanho - i) * pos--;
+    if (pos < 2) pos = 9;
+  }
+  let resultado = soma % 11 < 2 ? 0 : 11 - (soma % 11);
+  if (resultado !== parseInt(digitos.charAt(0))) return false;
+  tamanho += 1;
+  numeros = cnpj.substring(0, tamanho);
+  soma = 0;
+  pos = tamanho - 7;
+  for (let i = tamanho; i >= 1; i--) {
+    soma += numeros.charAt(tamanho - i) * pos--;
+    if (pos < 2) pos = 9;
+  }
+  resultado = soma % 11 < 2 ? 0 : 11 - (soma % 11);
+  return resultado === parseInt(digitos.charAt(1));
+}
+
+async function buscarCep() {
+  const cep = clienteCep.value.replace(/\D/g, '');
+  if (cep.length !== 8) return;
+  try {
+    const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.erro) return;
+    const endereco = `${data.logradouro}, ${data.bairro}, ${data.localidade} - ${data.uf}`.trim();
+    if (!clienteEndereco.value) {
+      clienteEndereco.value = endereco;
+    }
+  } catch (err) {
+    console.error('Erro ao buscar CEP', err);
+  }
+}
+
 
 function atualizarEstadoBotaoProximo() {
   const tabAtual = document.querySelector(".tab-btn.active");
@@ -536,6 +627,15 @@ function initOrcamentoModal() {
     validarClienteNome();
     atualizarEstadoBotaoProximo();
   });
+  if (clienteTelefone) {
+    clienteTelefone.addEventListener('input', () => validarTelefone());
+  }
+  if (clienteCpf) {
+    clienteCpf.addEventListener('input', () => validarCpfCnpj());
+  }
+  if (clienteCep) {
+    clienteCep.addEventListener('blur', buscarCep);
+  }
   addProdutosBtn.addEventListener("click", abrirModalSelecionarProdutos);
 
   tipoDescontoSelect.addEventListener("change", () => {
@@ -560,6 +660,18 @@ function initOrcamentoModal() {
       atualizarEstadoBotaoProximo();
       return;
     }
+    if (!validarTelefone()) {
+      mostrarToast("Telefone inválido");
+      ativarTab("cliente");
+      clienteTelefone.focus();
+      return;
+    }
+    if (!validarCpfCnpj()) {
+      mostrarToast("CPF/CNPJ inválido");
+      ativarTab("cliente");
+      clienteCpf.focus();
+      return;
+    }
     if (produtosSelecionados.length === 0) {
       mostrarToast("Selecione pelo menos um produto");
       ativarTab("produtos");
@@ -581,6 +693,7 @@ function initOrcamentoModal() {
     try {
       const dadosOrcamento = {
         nomeCliente: clienteNome.value,
+        cepCliente: clienteCep.value,
         enderecoCliente: clienteEndereco.value,
         telefoneCliente: clienteTelefone.value,
         emailCliente: clienteEmail.value,
@@ -1016,6 +1129,7 @@ function abrirModalOrcamento() {
   valorDescontoInput.required = false;
   orcamentoIdInput.value = "";
   clienteCpf.value = "";
+  clienteCep.value = "";
   orcamentoModal.classList.add("active");
   setCurrentForm(orcamentoForm);
   validarClienteNome(false);
@@ -1034,6 +1148,7 @@ async function abrirModalEditarOrcamento(id) {
     const orc = await res.json();
     orcamentoIdInput.value = id;
     clienteNome.value = orc.nomeCliente;
+    clienteCep.value = orc.cepCliente || "";
     clienteEndereco.value = orc.enderecoCliente || "";
     clienteTelefone.value = orc.telefoneCliente || "";
     clienteEmail.value = orc.emailCliente || "";
