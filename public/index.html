@@ -15,6 +15,9 @@
   
   <!-- Manifest para PWA -->
   <link rel="manifest" href="/manifest.json">
+  <link rel="preload" href="/css/modern-style.css" as="style">
+  <link rel="preload" href="/js/app.js" as="script">
+  <link rel="prefetch" href="/js/jspdf.umd.min.js" as="script">
   
   <!-- Estilos CSS -->
   <link rel="stylesheet" href="/css/modern-style.css">
@@ -22,6 +25,7 @@
   <!-- Fonte Inter do Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- Ícones Material -->
@@ -33,7 +37,7 @@
     <div class="container">
       <div class="header-content">
         <div class="header-logo">
-          <img src="/images/logo/logo.jpeg" alt="Start Orçamentos">
+          <img src="/images/logo/logo.jpeg" alt="Start Orçamentos" loading="lazy">
           <h1>Start Orçamentos</h1>
         </div>
         <div class="header-actions">
@@ -52,7 +56,7 @@
   <nav id="side-menu" class="side-menu">
     <div class="menu-header">
       <div class="menu-header-logo">
-        <img src="/images/logo/logo.jpeg" alt="Start Orçamentos">
+        <img src="/images/logo/logo.jpeg" alt="Start Orçamentos" loading="lazy">
         <h2>Start Orçamentos</h2>
       </div>
       <button id="menu-close" aria-label="Fechar menu">
@@ -244,7 +248,7 @@
         </div>
         <form id="perfil-form" class="perfil-form">
           <div class="perfil-avatar">
-            <img id="perfil-foto-preview" src="/images/placeholder.png" alt="Foto de perfil">
+            <img id="perfil-foto-preview" src="/images/placeholder.png" alt="Foto de perfil" loading="lazy">
             <input type="file" id="perfil-foto" accept="image/*" style="display:none;">
             <button type="button" id="perfil-foto-btn" class="btn btn-secondary">
               <span class="material-icons">photo_camera</span> Alterar Foto
@@ -274,7 +278,7 @@
         </div>
         <div class="about-content">
           <div class="app-logo">
-            <img src="/images/logo/logo.jpeg" alt="Logo Start Orçamentos" style="max-width: 200px; border-radius: var(--border-radius-lg);">
+            <img src="/images/logo/logo.jpeg" alt="Logo Start Orçamentos" style="max-width: 200px; border-radius: var(--border-radius-lg);" loading="lazy">
           </div>
           <div class="about-info">
             <h3>Start Orçamentos v1</h3>
@@ -390,7 +394,7 @@
               <input type="file" id="produto-foto" name="produto-foto" accept="image/*">
               <!-- Container para o Preview Adicionado -->
               <div id="foto-preview-container" class="file-preview" style="display: none;">
-                <img id="foto-preview" src="#" alt="Preview">
+                <img id="foto-preview" src="#" alt="Preview" loading="lazy">
               </div>
               <button type="button" id="select-foto-btn" class="btn btn-secondary">
                 <span class="material-icons">photo_camera</span>
@@ -721,8 +725,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="/js/jspdf.umd.min.js"></script>
-  <script src="/js/app.js"></script>
+  <script src="/js/jspdf.umd.min.js" defer></script>
+  <script src="/js/app.js" defer></script>
   <script>
     // Registra o service worker para PWA
     if ('serviceWorker' in navigator) {

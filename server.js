@@ -17,6 +17,7 @@ const multer = require("multer");
 const ejs = require("ejs"); // Template engine
 const puppeteer = require("puppeteer"); // PDF generation - Garante que está usando o pacote completo
 const session = require("express-session");
+const compression = require("compression");
 const bcrypt = require("bcrypt");
 const app = express();
 
@@ -62,6 +63,7 @@ process.on("SIGINT", () => {
 // Configuração do middleware para processar JSON e dados de formulário
 app.use(express.json({ limit: "100mb" })); // Aumenta limite para JSON (Base64)
 app.use(express.urlencoded({ extended: true, limit: "100mb" }));
+app.use(compression());
 
 app.use(
   session({
@@ -73,7 +75,14 @@ app.use(
 );
 
 // Configuração para servir arquivos estáticos da pasta public
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "public"), {
+  maxAge: "30d",
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith(".html")) {
+      res.setHeader("Cache-Control", "no-cache");
+    }
+  }
+}));
 
 // Configuração do multer para upload de imagens EM MEMÓRIA
 const memoryStorage = multer.memoryStorage();
@@ -300,8 +309,9 @@ app.post("/api/usuarios", authRequired, adminRequired, upload.single("foto"), as
   };
   if (req.file) {
     const sharp = await import('sharp');
-    const buffer = await sharp.default(req.file.buffer).resize({ width: 800 }).toBuffer();
-    novo.foto = `data:${req.file.mimetype};base64,${buffer.toString('base64')}`;
+    const buffer = await sharp.default(req.file.buffer).resize({ width: 800 }).webp().toBuffer();
+    req.file.buffer = null;
+    novo.foto = `data:image/webp;base64,${buffer.toString('base64')}`;
   }
   usuarios.push(novo);
   await salvarUsuarios(usuarios);
@@ -324,8 +334,9 @@ app.put("/api/usuarios/:id", authRequired, adminRequired, upload.single("foto"),
   if (admin !== undefined) usuarios[index].admin = !!admin;
   if (req.file) {
     const sharp = await import('sharp');
-    const buffer = await sharp.default(req.file.buffer).resize({ width: 800 }).toBuffer();
-    usuarios[index].foto = `data:${req.file.mimetype};base64,${buffer.toString('base64')}`;
+    const buffer = await sharp.default(req.file.buffer).resize({ width: 800 }).webp().toBuffer();
+    req.file.buffer = null;
+    usuarios[index].foto = `data:image/webp;base64,${buffer.toString('base64')}`;
   }
   await salvarUsuarios(usuarios);
   const { senha: s, ...usuarioResp } = usuarios[index];
@@ -365,8 +376,9 @@ app.put("/api/usuarios/me", authRequired, upload.single("foto"), async (req, res
   if (senha) usuarios[index].senha = await bcrypt.hash(senha, 10);
   if (req.file) {
     const sharp = await import('sharp');
-    const buffer = await sharp.default(req.file.buffer).resize({ width: 800 }).toBuffer();
-    usuarios[index].foto = `data:${req.file.mimetype};base64,${buffer.toString('base64')}`;
+    const buffer = await sharp.default(req.file.buffer).resize({ width: 800 }).webp().toBuffer();
+    req.file.buffer = null;
+    usuarios[index].foto = `data:image/webp;base64,${buffer.toString('base64')}`;
   }
   await salvarUsuarios(usuarios);
   const { senha: s, ...updatedUser } = usuarios[index];
@@ -383,9 +395,17 @@ app.get("/api/logs", authRequired, adminRequired, async (req, res) => {
 app.get("/api/produtos", async (req, res, next) => {
   try {
     const produtos = await lerArquivoJSON(path.join(__dirname, "data", "produtos.json"));
+    if (req.query.page || req.query.limit) {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 50;
+      const total = produtos.length;
+      const start = (page - 1) * limit;
+      const items = produtos.slice(start, start + limit);
+      return res.json({ total, page, items });
+    }
     res.json(produtos);
   } catch (error) {
-    next(error); // Passa o erro para o middleware
+    next(error);
   }
 });
 
@@ -412,8 +432,9 @@ app.post("/api/produtos", authRequired, adminRequired, upload.single("foto"), as
     let fotoBase64 = null;
     if (req.file) {
       const sharp = await import('sharp');
-      const buffer = await sharp.default(req.file.buffer).resize({ width: 800 }).toBuffer();
-      fotoBase64 = `data:${req.file.mimetype};base64,${buffer.toString('base64')}`;
+      const buffer = await sharp.default(req.file.buffer).resize({ width: 800 }).webp().toBuffer();
+      req.file.buffer = null;
+      fotoBase64 = `data:image/webp;base64,${buffer.toString('base64')}`;
     }
     const produtos = await lerArquivoJSON(path.join(__dirname, "data", "produtos.json"));
     const novoProduto = {
@@ -452,8 +473,9 @@ app.put("/api/produtos/:id", authRequired, adminRequired, upload.single("foto"),
     };
     if (req.file) {
       const sharp = await import('sharp');
-      const buffer = await sharp.default(req.file.buffer).resize({ width: 800 }).toBuffer();
-      produtoAtualizado.foto = `data:${req.file.mimetype};base64,${buffer.toString('base64')}`;
+      const buffer = await sharp.default(req.file.buffer).resize({ width: 800 }).webp().toBuffer();
+      req.file.buffer = null;
+      produtoAtualizado.foto = `data:image/webp;base64,${buffer.toString('base64')}`;
     }
     produtos[index] = produtoAtualizado;
     await escreverArquivoJSON(path.join(__dirname, "data", "produtos.json"), produtos);
@@ -528,9 +550,21 @@ app.get("/api/orcamentos", authRequired, async (req, res, next) => {
   try {
     const orcamentos = await lerArquivoJSON(path.join(__dirname, "data", "orcamentos.json"));
     const filtrados = req.session.usuario.admin ? orcamentos : orcamentos.filter(o => o.userId === req.session.usuario.id);
-    const orcamentosSemFotoItens = filtrados.map(orc => ({
+    if (req.query.page || req.query.limit) {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 50;
+      const total = filtrados.length;
+      const start = (page - 1) * limit;
+      const slice = filtrados.slice(start, start + limit);
+      const itens = slice.map(orc => ({
         ...orc,
         itens: orc.itens.map(({ foto, ...restoItem }) => restoItem)
+      }));
+      return res.json({ total, page, items: itens });
+    }
+    const orcamentosSemFotoItens = filtrados.map(orc => ({
+      ...orc,
+      itens: orc.itens.map(({ foto, ...restoItem }) => restoItem)
     }));
     res.json(orcamentosSemFotoItens);
   } catch (error) {
@@ -1048,7 +1082,7 @@ app.use((err, req, res, next) => {
   const message = err.message || "Algo deu errado no servidor!";
   res.status(status).json({ erro: message });
 });
-if (require.main === module) {
+function startServer() {
   const https = require("https");
   const http = require("http");
 
@@ -1074,6 +1108,23 @@ if (require.main === module) {
   https.createServer(sslOptions, app).listen(443, () => {
     console.log("✅ Servidor HTTPS rodando em https://start.devlimassh.shop (porta 443)");
   });
+}
+
+if (require.main === module) {
+  const cluster = require('cluster');
+  const os = require('os');
+  if (cluster.isMaster) {
+    const numCPUs = os.cpus().length;
+    for (let i = 0; i < numCPUs; i++) {
+      cluster.fork();
+    }
+    cluster.on('exit', (worker) => {
+      console.log(`Worker ${worker.process.pid} morreu. Reiniciando...`);
+      cluster.fork();
+    });
+  } else {
+    startServer();
+  }
 }
 
 module.exports = app;
