@@ -313,6 +313,7 @@ input:focus, textarea:focus, select:focus {
   font-size: 16px;
   font-weight: 500;
   margin-bottom: 4px;
+  word-break: break-word;
 }
 
 .item-subtitle {
@@ -408,7 +409,7 @@ input:focus, textarea:focus, select:focus {
   background-color: var(--background-color);
   border-radius: var(--border-radius);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
+  overflow-y: auto;
   transform: scale(0.9);
   transition: transform var(--transition-speed);
 }
@@ -471,6 +472,14 @@ input:focus, textarea:focus, select:focus {
 
 .form-actions button {
   margin-left: 8px;
+}
+
+#visualizar-orcamento-modal .form-actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#visualizar-orcamento-modal .form-actions button {
+  flex: 1 1 auto;
 }
 
 /* Botões */
@@ -575,6 +584,7 @@ button:disabled {
 .selected-item-name {
   font-weight: 500;
   margin-bottom: 4px;
+  word-break: break-word;
 }
 
 .selected-item-price {
@@ -838,4 +848,25 @@ button:disabled {
     width: 100%;
     border: none;
   }
+}
+
+/* Modo escuro */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background-color: #121212;
+    --background-secondary: #1f1f1f;
+    --text-color: #e0e0e0;
+    --text-secondary: #aaaaaa;
+    --border-color: #333;
+    --shadow-color: rgba(0, 0, 0, 0.5);
+  }
+}
+
+.dark-mode {
+  --background-color: #121212;
+  --background-secondary: #1f1f1f;
+  --text-color: #e0e0e0;
+  --text-secondary: #aaaaaa;
+  --border-color: #333;
+  --shadow-color: rgba(0, 0, 0, 0.5);
 }

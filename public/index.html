@@ -15,6 +15,9 @@
   
   <!-- Manifest para PWA -->
   <link rel="manifest" href="/manifest.json">
+  <link rel="preload" href="/css/modern-style.css" as="style">
+  <link rel="preload" href="/js/app.js" as="script">
+  <link rel="prefetch" href="/js/jspdf.umd.min.js" as="script">
   
   <!-- Estilos CSS -->
   <link rel="stylesheet" href="/css/modern-style.css">
@@ -22,6 +25,7 @@
   <!-- Fonte Inter do Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- Ícones Material -->
@@ -33,12 +37,15 @@
     <div class="container">
       <div class="header-content">
         <div class="header-logo">
-          <img src="/images/logo/logo.jpeg" alt="Start Orçamentos">
+          <img src="/images/logo/logo.jpeg" alt="Start Orçamentos" loading="lazy">
           <h1>Start Orçamentos</h1>
         </div>
         <div class="header-actions">
           <button id="menu-toggle" aria-label="Menu">
             <span class="material-icons">menu</span>
+          </button>
+          <button id="toggle-dark-mode" aria-label="Alternar tema">
+            <span class="material-icons">dark_mode</span>
           </button>
         </div>
       </div>
@@ -49,7 +56,7 @@
   <nav id="side-menu" class="side-menu">
     <div class="menu-header">
       <div class="menu-header-logo">
-        <img src="/images/logo/logo.jpeg" alt="Start Orçamentos">
+        <img src="/images/logo/logo.jpeg" alt="Start Orçamentos" loading="lazy">
         <h2>Start Orçamentos</h2>
       </div>
       <button id="menu-close" aria-label="Fechar menu">
@@ -172,7 +179,8 @@
         </div>
         <div class="search-bar">
           <span class="material-icons">search</span>
-          <input type="text" id="produto-search" name="produto-search" placeholder="Buscar produtos...">
+          <input type="text" id="produto-search" name="produto-search" placeholder="Buscar produtos..." list="sugestoes-produtos">
+          <datalist id="sugestoes-produtos"></datalist>
         </div>
         <div id="produtos-lista" class="lista-items">
           <!-- Os produtos serão carregados dinamicamente aqui -->
@@ -240,7 +248,7 @@
         </div>
         <form id="perfil-form" class="perfil-form">
           <div class="perfil-avatar">
-            <img id="perfil-foto-preview" src="/images/placeholder.png" alt="Foto de perfil">
+            <img id="perfil-foto-preview" src="/images/placeholder.png" alt="Foto de perfil" loading="lazy">
             <input type="file" id="perfil-foto" accept="image/*" style="display:none;">
             <button type="button" id="perfil-foto-btn" class="btn btn-secondary">
               <span class="material-icons">photo_camera</span> Alterar Foto
@@ -270,7 +278,7 @@
         </div>
         <div class="about-content">
           <div class="app-logo">
-            <img src="/images/logo/logo.jpeg" alt="Logo Start Orçamentos" style="max-width: 200px; border-radius: var(--border-radius-lg);">
+            <img src="/images/logo/logo.jpeg" alt="Logo Start Orçamentos" style="max-width: 200px; border-radius: var(--border-radius-lg);" loading="lazy">
           </div>
           <div class="about-info">
             <h3>Start Orçamentos v1</h3>
@@ -386,7 +394,7 @@
               <input type="file" id="produto-foto" name="produto-foto" accept="image/*">
               <!-- Container para o Preview Adicionado -->
               <div id="foto-preview-container" class="file-preview" style="display: none;">
-                <img id="foto-preview" src="#" alt="Preview">
+                <img id="foto-preview" src="#" alt="Preview" loading="lazy">
               </div>
               <button type="button" id="select-foto-btn" class="btn btn-secondary">
                 <span class="material-icons">photo_camera</span>
@@ -421,6 +429,7 @@
           <div class="form-tabs">
             <button type="button" class="tab-btn active" data-tab="cliente">Cliente</button>
             <button type="button" class="tab-btn" data-tab="produtos">Produtos</button>
+            <button type="button" class="tab-btn" data-tab="pagamento">Pagamento</button>
             <button type="button" class="tab-btn" data-tab="desconto">Desconto</button>
             <button type="button" class="tab-btn" data-tab="template">Template</button>
           </div>
@@ -477,6 +486,34 @@
               <label for="orcamento-observacoes">Observações</label>
               <textarea id="orcamento-observacoes" rows="3"></textarea>
               <span class="helper-text">Adicione observações ou condições especiais para este orçamento</span>
+            </div>
+          </div>
+
+          <!-- Tab Pagamento -->
+          <div class="tab-content" id="tab-pagamento" style="display: none;">
+            <div class="form-group">
+              <label for="forma-pagamento">Forma de Pagamento</label>
+              <select id="forma-pagamento" name="forma-pagamento">
+                <option value="avista" selected>À vista</option>
+                <option value="prazo">A prazo</option>
+              </select>
+            </div>
+            <div class="form-group" id="avista-grupo">
+              <label for="avista-tipo">Tipo</label>
+              <select id="avista-tipo">
+                <option value="dinheiro">Dinheiro</option>
+                <option value="cartao">Cartão</option>
+              </select>
+            </div>
+            <div id="prazo-grupo" style="display: none;">
+              <div class="form-group">
+                <label for="prazo-parcelas">Parcelas</label>
+                <input type="number" id="prazo-parcelas" min="1" value="1">
+              </div>
+              <div class="form-group">
+                <label for="prazo-juros">Juros ao mês (%)</label>
+                <input type="number" id="prazo-juros" min="0" step="0.01" value="0">
+              </div>
             </div>
           </div>
 
@@ -688,8 +725,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="/js/jspdf.umd.min.js"></script>
-  <script src="/js/app.js"></script>
+  <script src="/js/jspdf.umd.min.js" defer></script>
+  <script src="/js/app.js" defer></script>
   <script>
     // Registra o service worker para PWA
     if ('serviceWorker' in navigator) {
