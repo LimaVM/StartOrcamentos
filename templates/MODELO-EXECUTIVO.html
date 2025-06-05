@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Orçamento <%= orcamento.id %></title>
+<style>
+  body { font-family:'Times New Roman', serif; font-size:12px; padding:30px; }
+  h1 { text-align:right; font-size:24px; margin:0; }
+  .cliente { margin-top:20px; }
+  .cliente p { margin:2px 0; }
+  table { width:100%; border-collapse:collapse; margin-top:25px; }
+  th { background:#333; color:#fff; padding:5px; }
+  td { border:1px solid #333; padding:6px; }
+  .direita { text-align:right; }
+  .totais { margin-top:20px; text-align:right; }
+</style>
+</head>
+<body>
+  <h1>Proposta</h1>
+  <div class="cliente">
+    <p><strong>Cliente:</strong> <%= orcamento.nomeCliente %></p>
+    <p><strong>Data:</strong> <%= orcamento.dataCriacaoFormatada %></p>
+    <p><strong>Referência:</strong> <%= orcamento.id %></p>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Produto</th>
+        <th>Descrição</th>
+        <th>Qtd</th>
+        <th>Unit.</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% orcamento.itens.forEach(item => { %>
+      <tr>
+        <td><%= item.nome %></td>
+        <td><%= item.descricao %></td>
+        <td class="direita"><%= item.quantidade %></td>
+        <td class="direita"><%= item.valorUnitarioOriginalFormatado %></td>
+        <td class="direita"><%= item.valorTotalItemFormatado %></td>
+      </tr>
+      <% }); %>
+    </tbody>
+  </table>
+  <div class="totais">
+    <p>Subtotal: <%= orcamento.valorTotalBrutoFormatado %></p>
+    <% if (orcamento.descontoCalculado > 0) { %>
+    <p>Desconto: <%= orcamento.valorDescontoCalculadoFormatado %></p>
+    <% } %>
+    <p><strong>Total: <%= orcamento.valorTotalFormatado %></strong></p>
+    <% if (orcamento.formaPagamento === 'prazo') { %>
+    <p><%= orcamento.parcelas %>x de <%= orcamento.valorParcelaFormatada %></p>
+    <% } else { %>
+    <p>À vista - <%= orcamento.avistaTipo === 'cartao' ? 'Cartão' : 'Dinheiro' %></p>
+    <% } %>
+  </div>
+  <p style="margin-top:40px">Vendedor: <%= vendedor %></p>
+</body>
+</html>

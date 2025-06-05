@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Orçamento <%= orcamento.id %></title>
+<style>
+  body { font-family: 'Helvetica', sans-serif; color:#222; margin:0; padding:0; }
+  .topo { background:#004080; color:#fff; padding:20px; text-align:center; }
+  .topo img { max-height:70px; display:block; margin:0 auto 10px; }
+  .dados { padding:15px; }
+  .produtos { width:100%; border-collapse:collapse; }
+  .produtos th { background:#eee; padding:5px; }
+  .produtos td { border-bottom:1px solid #ddd; padding:5px; }
+  .totais { background:#f7f7f7; padding:15px; }
+  footer { text-align:center; font-size:12px; margin-top:20px; }
+</style>
+</head>
+<body>
+  <div class="topo">
+    <img src="<%= logoUrl %>" alt="Logo">
+    <h2>Proposta Comercial</h2>
+  </div>
+  <div class="dados">
+    <p><strong>Cliente:</strong> <%= orcamento.nomeCliente %></p>
+    <p><strong>Contato:</strong> <%= orcamento.telefoneCliente %> | <%= orcamento.emailCliente %></p>
+    <p><strong>Endereço:</strong> <%= orcamento.enderecoCliente %></p>
+  </div>
+  <table class="produtos">
+    <thead>
+      <tr>
+        <th>Produto</th>
+        <th>Qtd</th>
+        <th>Unitário</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% orcamento.itens.forEach(item => { %>
+      <tr>
+        <td><%= item.nome %></td>
+        <td style="text-align:center"><%= item.quantidade %></td>
+        <td style="text-align:right"><%= item.valorUnitarioOriginalFormatado %></td>
+        <td style="text-align:right"><%= item.valorTotalItemFormatado %></td>
+      </tr>
+      <% }); %>
+    </tbody>
+  </table>
+  <div class="totais">
+    <p><strong>Subtotal:</strong> <%= orcamento.valorTotalBrutoFormatado %></p>
+    <% if (orcamento.descontoCalculado > 0) { %>
+    <p><strong>Desconto:</strong> <%= orcamento.valorDescontoCalculadoFormatado %></p>
+    <% } %>
+    <p><strong>Total:</strong> <%= orcamento.valorTotalFormatado %></p>
+    <% if (orcamento.formaPagamento === 'prazo') { %>
+    <p><%= orcamento.parcelas %>x de <%= orcamento.valorParcelaFormatada %></p>
+    <% } else { %>
+    <p>Pagamento à vista (<%= orcamento.avistaTipo === 'cartao' ? 'Cartão' : 'Dinheiro' %>)</p>
+    <% } %>
+  </div>
+  <footer>
+    <p>Vendedor: <%= vendedor %> - Ref. <%= orcamento.id %></p>
+    <p>Data: <%= orcamento.dataCriacaoFormatada %></p>
+  </footer>
+</body>
+</html>

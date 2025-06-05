@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Orçamento <%= orcamento.id %></title>
+<style>
+  body { font-family:'Inter', sans-serif; background:#fafafa; color:#111; margin:0; padding:20px; }
+  .cabecalho { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  .cabecalho img { max-height:50px; }
+  .cabecalho h2 { margin:0; font-size:20px; }
+  table { width:100%; border-collapse:separate; border-spacing:0 4px; }
+  th { text-align:left; background:#333; color:#fff; padding:6px; font-size:12px; }
+  td { background:#fff; padding:6px; border-bottom:1px solid #ddd; }
+  .right { text-align:right; }
+  .totais { margin-top:15px; font-size:14px; }
+</style>
+</head>
+<body>
+  <div class="cabecalho">
+    <img src="<%= logoUrl %>" alt="Logo">
+    <h2>Orçamento - <%= orcamento.nomeCliente %></h2>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Produto</th>
+        <th>Qtd</th>
+        <th class="right">Unit.</th>
+        <th class="right">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% orcamento.itens.forEach(item => { %>
+      <tr>
+        <td><%= item.nome %></td>
+        <td class="right"><%= item.quantidade %></td>
+        <td class="right"><%= item.valorUnitarioOriginalFormatado %></td>
+        <td class="right"><%= item.valorTotalItemFormatado %></td>
+      </tr>
+      <% }); %>
+    </tbody>
+  </table>
+  <div class="totais">
+    <p><strong>Subtotal:</strong> <%= orcamento.valorTotalBrutoFormatado %></p>
+    <% if (orcamento.descontoCalculado > 0) { %>
+    <p><strong>Desconto:</strong> <%= orcamento.valorDescontoCalculadoFormatado %></p>
+    <% } %>
+    <p><strong>Total:</strong> <%= orcamento.valorTotalFormatado %></p>
+    <% if (orcamento.formaPagamento === 'prazo') { %>
+    <p><%= orcamento.parcelas %>x de <%= orcamento.valorParcelaFormatada %></p>
+    <% } else { %>
+    <p>À vista - <%= orcamento.avistaTipo === 'cartao' ? 'Cartão' : 'Dinheiro' %></p>
+    <% } %>
+  </div>
+  <p style="margin-top:25px">Vendedor: <%= vendedor %> | Ref. <%= orcamento.id %></p>
+</body>
+</html>
