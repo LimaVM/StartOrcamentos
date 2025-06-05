@@ -1100,34 +1100,51 @@ function startServer() {
   const https = require("https");
   const http = require("http");
 
-  // Certificados Let's Encrypt
-  const sslOptions = {
-    key: require("fs").readFileSync("/etc/letsencrypt/live/start.devlimassh.shop/privkey.pem"),
-    cert: require("fs").readFileSync("/etc/letsencrypt/live/start.devlimassh.shop/fullchain.pem")
-  };
+  const isProd = process.env.NODE_ENV === "production";
+  let useHttps = false;
+  let sslOptions = null;
 
-  // Redirecionador HTTP → HTTPS
-  const redirectApp = express();
-  redirectApp.use((req, res) => {
-    const hostHeader = req.headers.host || "";
-    const host = hostHeader.replace(/:\d+$/, "");
-    res.redirect(`https://${host}${req.url}`);
-  });
+  if (isProd) {
+    try {
+      sslOptions = {
+        key: require("fs").readFileSync("/etc/letsencrypt/live/start.devlimassh.shop/privkey.pem"),
+        cert: require("fs").readFileSync("/etc/letsencrypt/live/start.devlimassh.shop/fullchain.pem"),
+      };
+      useHttps = true;
+    } catch {
+      console.warn("Certificados SSL não encontrados. Iniciando em HTTP.");
+    }
+  }
 
-  http.createServer(redirectApp).listen(80, () => {
-    console.log("🔁 Redirecionamento HTTP → HTTPS ativo (porta 80)");
-  });
+  if (useHttps) {
+    const redirectApp = express();
+    redirectApp.use((req, res) => {
+      const hostHeader = req.headers.host || "";
+      const host = hostHeader.replace(/:\d+$/, "");
+      res.redirect(`https://${host}${req.url}`);
+    });
 
-  // Servidor HTTPS real
-  https.createServer(sslOptions, app).listen(443, () => {
-    console.log("✅ Servidor HTTPS rodando em https://start.devlimassh.shop (porta 443)");
-  });
+    http.createServer(redirectApp).listen(80, () => {
+      console.log("🔁 Redirecionamento HTTP → HTTPS ativo (porta 80)");
+    });
+
+    https.createServer(sslOptions, app).listen(443, () => {
+      console.log("✅ Servidor HTTPS rodando em https://start.devlimassh.shop (porta 443)");
+    });
+  } else {
+    const port = process.env.PORT || 3000;
+    http.createServer(app).listen(port, () => {
+      console.log(`Servidor HTTP rodando na porta ${port}`);
+    });
+  }
 }
 
 if (require.main === module) {
   const cluster = require('cluster');
   const os = require('os');
-  if (cluster.isMaster) {
+  const isProd = process.env.NODE_ENV === 'production';
+
+  if (isProd && cluster.isMaster) {
     const numCPUs = os.cpus().length;
     for (let i = 0; i < numCPUs; i++) {
       cluster.fork();
