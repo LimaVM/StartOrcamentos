@@ -1100,20 +1100,21 @@ function startServer() {
   const https = require("https");
   const http = require("http");
 
-  const isProd = process.env.NODE_ENV === "production";
   let useHttps = false;
   let sslOptions = null;
 
-  if (isProd) {
-    try {
-      sslOptions = {
-        key: require("fs").readFileSync("/etc/letsencrypt/live/start.devlimassh.shop/privkey.pem"),
-        cert: require("fs").readFileSync("/etc/letsencrypt/live/start.devlimassh.shop/fullchain.pem"),
-      };
-      useHttps = true;
-    } catch {
-      console.warn("Certificados SSL não encontrados. Iniciando em HTTP.");
-    }
+  try {
+    sslOptions = {
+      key: require("fs").readFileSync(
+        "/etc/letsencrypt/live/start.devlimassh.shop/privkey.pem"
+      ),
+      cert: require("fs").readFileSync(
+        "/etc/letsencrypt/live/start.devlimassh.shop/fullchain.pem"
+      ),
+    };
+    useHttps = true;
+  } catch {
+    console.warn("Certificados SSL não encontrados. Iniciando em HTTP.");
   }
 
   if (useHttps) {
