@@ -40,6 +40,9 @@
           <button id="menu-toggle" aria-label="Menu">
             <span class="material-icons">menu</span>
           </button>
+          <button id="toggle-dark-mode" aria-label="Alternar tema">
+            <span class="material-icons">dark_mode</span>
+          </button>
         </div>
       </div>
     </div>
@@ -172,7 +175,8 @@
         </div>
         <div class="search-bar">
           <span class="material-icons">search</span>
-          <input type="text" id="produto-search" name="produto-search" placeholder="Buscar produtos...">
+          <input type="text" id="produto-search" name="produto-search" placeholder="Buscar produtos..." list="sugestoes-produtos">
+          <datalist id="sugestoes-produtos"></datalist>
         </div>
         <div id="produtos-lista" class="lista-items">
           <!-- Os produtos serão carregados dinamicamente aqui -->

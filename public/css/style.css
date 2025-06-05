@@ -849,3 +849,24 @@ button:disabled {
     border: none;
   }
 }
+
+/* Modo escuro */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background-color: #121212;
+    --background-secondary: #1f1f1f;
+    --text-color: #e0e0e0;
+    --text-secondary: #aaaaaa;
+    --border-color: #333;
+    --shadow-color: rgba(0, 0, 0, 0.5);
+  }
+}
+
+.dark-mode {
+  --background-color: #121212;
+  --background-secondary: #1f1f1f;
+  --text-color: #e0e0e0;
+  --text-secondary: #aaaaaa;
+  --border-color: #333;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+}

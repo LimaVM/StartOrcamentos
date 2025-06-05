@@ -296,8 +296,13 @@ app.post("/api/usuarios", authRequired, adminRequired, upload.single("foto"), as
     usuario,
     senha: await bcrypt.hash(senha, 10),
     admin: !!admin,
-    foto: req.file ? `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}` : null,
+    foto: null,
   };
+  if (req.file) {
+    const sharp = await import('sharp');
+    const buffer = await sharp.default(req.file.buffer).resize({ width: 800 }).toBuffer();
+    novo.foto = `data:${req.file.mimetype};base64,${buffer.toString('base64')}`;
+  }
   usuarios.push(novo);
   await salvarUsuarios(usuarios);
   await registrarAcao(req, `Criou usuário ${usuario} (admin=${!!admin})`);
@@ -318,7 +323,9 @@ app.put("/api/usuarios/:id", authRequired, adminRequired, upload.single("foto"),
   if (senha) usuarios[index].senha = await bcrypt.hash(senha, 10);
   if (admin !== undefined) usuarios[index].admin = !!admin;
   if (req.file) {
-    usuarios[index].foto = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+    const sharp = await import('sharp');
+    const buffer = await sharp.default(req.file.buffer).resize({ width: 800 }).toBuffer();
+    usuarios[index].foto = `data:${req.file.mimetype};base64,${buffer.toString('base64')}`;
   }
   await salvarUsuarios(usuarios);
   const { senha: s, ...usuarioResp } = usuarios[index];
@@ -357,7 +364,9 @@ app.put("/api/usuarios/me", authRequired, upload.single("foto"), async (req, res
   }
   if (senha) usuarios[index].senha = await bcrypt.hash(senha, 10);
   if (req.file) {
-    usuarios[index].foto = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+    const sharp = await import('sharp');
+    const buffer = await sharp.default(req.file.buffer).resize({ width: 800 }).toBuffer();
+    usuarios[index].foto = `data:${req.file.mimetype};base64,${buffer.toString('base64')}`;
   }
   await salvarUsuarios(usuarios);
   const { senha: s, ...updatedUser } = usuarios[index];
@@ -402,7 +411,9 @@ app.post("/api/produtos", authRequired, adminRequired, upload.single("foto"), as
     }
     let fotoBase64 = null;
     if (req.file) {
-      fotoBase64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+      const sharp = await import('sharp');
+      const buffer = await sharp.default(req.file.buffer).resize({ width: 800 }).toBuffer();
+      fotoBase64 = `data:${req.file.mimetype};base64,${buffer.toString('base64')}`;
     }
     const produtos = await lerArquivoJSON(path.join(__dirname, "data", "produtos.json"));
     const novoProduto = {
@@ -440,7 +451,9 @@ app.put("/api/produtos/:id", authRequired, adminRequired, upload.single("foto"),
       dataAtualizacao: new Date().toISOString(),
     };
     if (req.file) {
-      produtoAtualizado.foto = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+      const sharp = await import('sharp');
+      const buffer = await sharp.default(req.file.buffer).resize({ width: 800 }).toBuffer();
+      produtoAtualizado.foto = `data:${req.file.mimetype};base64,${buffer.toString('base64')}`;
     }
     produtos[index] = produtoAtualizado;
     await escreverArquivoJSON(path.join(__dirname, "data", "produtos.json"), produtos);

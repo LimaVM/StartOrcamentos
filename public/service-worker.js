@@ -169,6 +169,17 @@ self.addEventListener('fetch', event => {
   }
 });
 
+// Notificações push
+self.addEventListener('push', event => {
+  const data = event.data ? event.data.json() : { title: 'Notificação', body: 'Você tem uma nova mensagem.' };
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/images/icons/icon-192x192.png'
+    })
+  );
+});
+
 /**
  * Verifica se a URL é de um recurso estático
  * @param {string} url - URL da requisição

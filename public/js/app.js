@@ -30,6 +30,7 @@ const menuClose = document.getElementById("menu-close");
 const sideMenu = document.querySelector(".side-menu");
 const overlay = document.getElementById("overlay");
 const menuItems = document.querySelectorAll(".menu-items li");
+const toggleDarkModeBtn = document.getElementById("toggle-dark-mode");
 const bottomNavItems = document.querySelectorAll(".bottom-nav-item");
 const pages = document.querySelectorAll(".page");
 const toast = document.getElementById("toast");
@@ -58,6 +59,7 @@ const cardPerfil = document.getElementById("card-perfil");
 // Elementos da página de produtos
 const addProdutoBtn = document.getElementById("add-produto-btn");
 const produtoSearch = document.getElementById("produto-search");
+const produtoSugestoes = document.getElementById("sugestoes-produtos");
 const produtosLista = document.getElementById("produtos-lista");
 
 // Elementos da página de orçamentos
@@ -373,6 +375,9 @@ function iniciarAplicacao() {
   initPerfilPage();
   carregarDadosIniciais();
   initInstallPrompt();
+  if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission();
+  }
 
 }
 
@@ -446,6 +451,17 @@ function initNavigation() {
   });
 
   window.addEventListener("resize", updateLayout);
+
+  // Tema escuro
+  const prefDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const savedTheme = localStorage.getItem('darkMode');
+  if (savedTheme === 'true' || (savedTheme === null && prefDark)) {
+    document.body.classList.add('dark-mode');
+  }
+  toggleDarkModeBtn.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+  });
 }
 
 function fecharMenu() {
@@ -536,6 +552,14 @@ function initProdutosPage() {
   produtoSearch.addEventListener("input", () => {
     const termo = produtoSearch.value.toLowerCase();
     filtrarProdutos(termo);
+    if (produtoSugestoes) {
+      const sugestoes = produtosCache
+        .filter(p => p.nome.toLowerCase().includes(termo))
+        .slice(0, 5)
+        .map(p => `<option value="${p.nome}">`)
+        .join('');
+      produtoSugestoes.innerHTML = sugestoes;
+    }
   });
 }
 
@@ -1070,6 +1094,9 @@ function renderizarOrcamentos() {
           <button class="btn-icon edit-orcamento" aria-label="Editar">
             <span class="material-icons">edit</span>
           </button>
+          <button class="btn-icon duplicate-orcamento" aria-label="Duplicar">
+            <span class="material-icons">content_copy</span>
+          </button>
           <button class="btn-icon delete-orcamento" aria-label="Excluir">
             <span class="material-icons">delete</span>
           </button>
@@ -1090,6 +1117,14 @@ function renderizarOrcamentos() {
     btn.addEventListener("click", (e) => {
       const orcamentoId = e.target.closest(".item-card").getAttribute("data-id");
       abrirModalEditarOrcamento(orcamentoId);
+      e.stopPropagation();
+    });
+  });
+
+  orcamentosLista.querySelectorAll(".duplicate-orcamento").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      const orcamentoId = e.target.closest(".item-card").getAttribute("data-id");
+      await duplicarOrcamento(orcamentoId);
       e.stopPropagation();
     });
   });
@@ -1433,6 +1468,54 @@ async function excluirOrcamento(id) {
   } catch (error) {
     console.error("Erro ao excluir orçamento:", error);
     mostrarToast("Erro ao excluir orçamento.");
+  } finally {
+    esconderLoading();
+  }
+}
+
+async function duplicarOrcamento(id) {
+  if (!navigator.onLine) {
+    mostrarToast('Função indisponível offline');
+    return;
+  }
+  mostrarLoading();
+  try {
+    const res = await fetch(`/api/orcamentos/${id}`);
+    if (!res.ok) throw new Error('Orçamento não encontrado');
+    const data = await res.json();
+    data.id = '';
+    abrirModalOrcamento();
+    clienteNome.value = data.nomeCliente;
+    clienteCep.value = data.cepCliente;
+    clienteEndereco.value = data.enderecoCliente;
+    clienteTelefone.value = data.telefoneCliente;
+    clienteEmail.value = data.emailCliente;
+    clienteCpf.value = data.cpfCliente;
+    formaPagamentoSelect.value = data.formaPagamento || 'avista';
+    avistaTipoSelect.value = data.avistaTipo || 'dinheiro';
+    prazoParcelasInput.value = data.parcelas || 1;
+    prazoJurosInput.value = data.jurosMes || 0;
+    tipoDescontoSelect.value = data.tipoDesconto || 'nenhum';
+    if (tipoDescontoSelect.value !== 'nenhum') {
+      valorDescontoInput.value = data.valorDescontoInput || 0;
+      valorDescontoGroup.style.display = 'block';
+      valorDescontoInput.required = true;
+    }
+    await carregarTemplates();
+    produtosSelecionados = data.itens.map(i => ({
+      id: i.id,
+      nome: i.nome,
+      valorUnitario: i.valorUnitario,
+      quantidade: i.quantidade,
+      foto: i.foto
+    }));
+    renderizarProdutosSelecionadosNoForm();
+    templatesLista.querySelectorAll('.template-item').forEach(item => {
+      item.classList.toggle('selected', item.getAttribute('data-id') === data.templateId);
+    });
+  } catch (err) {
+    console.error('Erro ao duplicar orçamento', err);
+    mostrarToast('Erro ao duplicar orçamento');
   } finally {
     esconderLoading();
   }
