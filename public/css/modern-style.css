@@ -548,6 +548,7 @@ input::placeholder, textarea::placeholder {
   font-size: 1.125rem;
   font-weight: 600;
   margin-bottom: var(--space-xs);
+  word-break: break-word;
 }
 
 .item-subtitle {
@@ -1065,6 +1066,7 @@ button:disabled,
   flex: 1;
   padding: 0 var(--space-sm);
   font-weight: 500;
+  word-break: break-word;
 }
 
 .selected-item .item-image-small {

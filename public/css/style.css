@@ -313,6 +313,7 @@ input:focus, textarea:focus, select:focus {
   font-size: 16px;
   font-weight: 500;
   margin-bottom: 4px;
+  word-break: break-word;
 }
 
 .item-subtitle {
@@ -583,6 +584,7 @@ button:disabled {
 .selected-item-name {
   font-weight: 500;
   margin-bottom: 4px;
+  word-break: break-word;
 }
 
 .selected-item-price {

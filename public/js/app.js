@@ -21,6 +21,7 @@ let currentForm = null;
 let formSnapshot = "";
 let currentPage = "home"; // Página atual para controle do histórico
 let usuarioAtual = null; // Dados do usuário logado
+let offlineQueue = [];
 
 // Elementos DOM frequentemente acessados
 const appContent = document.getElementById("app-content");
@@ -108,8 +109,15 @@ function atualizarDisponibilidadeOnline() {
   if (addProdutoBtn) addProdutoBtn.disabled = !online;
 }
 
-window.addEventListener('online', atualizarDisponibilidadeOnline);
-window.addEventListener('offline', atualizarDisponibilidadeOnline);
+window.addEventListener('online', () => {
+  atualizarDisponibilidadeOnline();
+  processarFilaOffline();
+  mostrarToast('Conectado');
+});
+window.addEventListener('offline', () => {
+  atualizarDisponibilidadeOnline();
+  mostrarToast('Você está offline');
+});
 
 // Elementos do modal de orçamento
 const orcamentoModal = document.getElementById("orcamento-modal");
@@ -373,7 +381,13 @@ function iniciarAplicacao() {
  */
 document.addEventListener("DOMContentLoaded", () => {
   updateLayout();
+  carregarFilaOffline();
   atualizarDisponibilidadeOnline();
+  if (!navigator.onLine) {
+    mostrarToast('Você está no modo offline');
+  } else {
+    processarFilaOffline();
+  }
   verificarSessao();
 });
 
@@ -619,7 +633,29 @@ function initProdutoModal() {
   produtoForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (!navigator.onLine) {
-      mostrarToast('Função indisponível offline');
+      const dados = { nome: produtoNome.value, descricao: produtoDescricao.value, valor: produtoValor.value };
+      if (produtoFotoInput.files && produtoFotoInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          dados.foto = reader.result;
+          offlineQueue.push({ tipo: 'addProduto', dados });
+          salvarFilaOffline();
+          const tempId = 'off-' + Date.now();
+          produtosCache.push({ id: tempId, ...dados });
+          renderizarProdutos();
+          produtoModal.classList.remove("active");
+          mostrarToast('Produto salvo offline');
+        };
+        reader.readAsDataURL(produtoFotoInput.files[0]);
+      } else {
+        offlineQueue.push({ tipo: 'addProduto', dados });
+        salvarFilaOffline();
+        const tempId = 'off-' + Date.now();
+        produtosCache.push({ id: tempId, ...dados });
+        renderizarProdutos();
+        produtoModal.classList.remove("active");
+        mostrarToast('Produto salvo offline');
+      }
       return;
     }
     mostrarLoading();
@@ -714,7 +750,43 @@ function initOrcamentoModal() {
   orcamentoForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (!navigator.onLine) {
-      mostrarToast('Função indisponível offline');
+      if (!validarClienteNome() || !validarTelefone() || !validarCpfCnpj() || produtosSelecionados.length === 0) {
+        mostrarToast('Preencha todos os dados obrigatórios');
+        return;
+      }
+      const templateSelecionado = document.querySelector(".template-item.selected");
+      if (!templateSelecionado) {
+        mostrarToast("Selecione um template");
+        return;
+      }
+      if (valorDescontoInput.required && !valorDescontoInput.value) {
+        mostrarToast("Preencha o valor do desconto");
+        return;
+      }
+      const dadosOrcamento = {
+        nomeCliente: clienteNome.value,
+        cepCliente: clienteCep.value,
+        enderecoCliente: clienteEndereco.value,
+        telefoneCliente: clienteTelefone.value,
+        emailCliente: clienteEmail.value,
+        cpfCliente: clienteCpf.value,
+        templateId: templateSelecionado.getAttribute("data-id"),
+        produtos: produtosSelecionados.map(p => ({ id: p.id, quantidade: p.quantidade })),
+        observacoes: orcamentoObservacoes.value,
+        tipoDesconto: tipoDescontoSelect.value === "nenhum" ? null : tipoDescontoSelect.value,
+        valorDesconto: valorDescontoInput.value || 0,
+        formaPagamento: formaPagamentoSelect.value,
+        avistaTipo: avistaTipoSelect.value,
+        parcelas: parseInt(prazoParcelasInput.value, 10) || 1,
+        jurosMes: parseFloat(prazoJurosInput.value) || 0,
+      };
+      offlineQueue.push({ tipo: 'addOrcamento', dados: dadosOrcamento });
+      salvarFilaOffline();
+      const tempId = 'off-' + Date.now();
+      orcamentosCache.push({ id: tempId, nomeCliente: dadosOrcamento.nomeCliente, valorTotal: 0, dataCriacao: new Date().toISOString() });
+      renderizarOrcamentos();
+      orcamentoModal.classList.remove("active");
+      mostrarToast('Orçamento salvo offline');
       return;
     }
     if (!validarClienteNome()) {
@@ -1641,6 +1713,55 @@ function setCurrentForm(form) {
 function markFormChanged() {
   if (currentForm) {
     isEditing = snapshotForm(currentForm) !== formSnapshot;
+  }
+}
+
+function carregarFilaOffline() {
+  offlineQueue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
+}
+
+function salvarFilaOffline() {
+  localStorage.setItem('offlineQueue', JSON.stringify(offlineQueue));
+}
+
+async function processarFilaOffline() {
+  if (offlineQueue.length === 0 || !navigator.onLine) return;
+  mostrarToast('Sincronizando ações offline...');
+  const fila = [...offlineQueue];
+  offlineQueue = [];
+  salvarFilaOffline();
+  for (const acao of fila) {
+    try {
+      if (acao.tipo === 'addProduto') {
+        const fd = new FormData();
+        fd.append('nome', acao.dados.nome);
+        fd.append('descricao', acao.dados.descricao || '');
+        fd.append('valor', acao.dados.valor);
+        if (acao.dados.foto) {
+          const blob = await (await fetch(acao.dados.foto)).blob();
+          fd.append('foto', new File([blob], 'foto.png', { type: blob.type }));
+        }
+        const res = await fetch('/api/produtos', { method: 'POST', body: fd });
+        if (!res.ok) throw new Error('Falha ao enviar produto');
+      } else if (acao.tipo === 'addOrcamento') {
+        const res = await fetch('/api/orcamentos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(acao.dados),
+        });
+        if (!res.ok) throw new Error('Falha ao enviar orçamento');
+      }
+    } catch (err) {
+      console.error('Erro ao sincronizar ação offline', err);
+      offlineQueue.push(acao);
+    }
+  }
+  salvarFilaOffline();
+  if (offlineQueue.length === 0) {
+    mostrarToast('Sincronização concluída');
+    await carregarDadosIniciais();
+  } else {
+    mostrarToast('Algumas ações não foram sincronizadas');
   }
 }
 
