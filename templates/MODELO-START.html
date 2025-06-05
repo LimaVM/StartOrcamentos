@@ -132,6 +132,11 @@
     <% } %>
     <hr>
     <p class="total-final">Total Final: <%= orcamento.valorTotalFormatado %></p>
+    <% if (orcamento.formaPagamento === 'avista') { %>
+    <p><strong>Pagamento:</strong> à vista (<%= orcamento.avistaTipo === 'cartao' ? 'Cartão' : 'Dinheiro' %>)</p>
+    <% } else { %>
+    <p><strong>Pagamento:</strong> <%= orcamento.parcelas %>x de <%= orcamento.valorParcelaFormatada %></p>
+    <% } %>
 
     <p><strong>Condições:</strong></p>
     <p>Garantia: 6 a 12 meses conforme produto.</p>

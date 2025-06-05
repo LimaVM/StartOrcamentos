@@ -11,6 +11,12 @@ $vendedor - Nome do usuário que gerou o orçamento.
 $observacoes - Observações adicionais inseridas no orçamento (pode estar vazio).
 $referencia - Igual ao código `$id`, para usar como referência no documento.
 $valortotal - Valor total do orçamento, formatado em moeda brasileira (Ex: R$ 1.234,56).
+$formapagamento - "avista" ou "prazo".
+$tipopagamento - "dinheiro" ou "cartao" quando à vista.
+$parcelas - Número de parcelas quando a prazo.
+$jurosmes - Percentual de juros ao mês informado.
+$valorparcelas - Valor de cada parcela considerando juros.
+$totalcomjuros - Valor final acrescido dos juros (se houver).
 $tabelaprodutos - Tabela HTML completa contendo os produtos do orçamento. A tabela inclui as colunas: Nome do Produto, Quantidade, Valor Unitário e Valor Total por item. Você deve colocar esta variável no local onde a tabela de itens deve ser renderizada no seu template HTML.
 
 Exemplo de uso da tabela no HTML:

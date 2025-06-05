@@ -7,7 +7,7 @@ Um aplicativo web progressivo (PWA) moderno para criação e gerenciamento de or
 - Design moderno e responsivo para qualquer dispositivo
 - Cadastro de produtos com imagens
 - Criação de orçamentos personalizados
-- Múltiplos templates de orçamento
+- Modelo de orçamento personalizável
 - Geração de PDF para download e compartilhamento
 - Funcionamento offline (consulta a produtos e templates mesmo sem conexão, sem cadastro de novos dados)
 - Interface intuitiva e amigável
