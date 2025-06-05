@@ -237,6 +237,7 @@ input::placeholder, textarea::placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-left: 0.25rem;
   transition: background-color var(--transition-fast);
 }
 

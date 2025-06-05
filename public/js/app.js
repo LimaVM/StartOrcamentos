@@ -457,10 +457,14 @@ function initNavigation() {
   const savedTheme = localStorage.getItem('darkMode');
   if (savedTheme === 'true' || (savedTheme === null && prefDark)) {
     document.body.classList.add('dark-mode');
+    toggleDarkModeBtn.querySelector('span').textContent = 'light_mode';
+    toggleDarkModeBtn.setAttribute('aria-pressed', 'true');
   }
   toggleDarkModeBtn.addEventListener('click', () => {
-    document.body.classList.toggle('dark-mode');
-    localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    const dark = document.body.classList.toggle('dark-mode');
+    localStorage.setItem('darkMode', dark);
+    toggleDarkModeBtn.querySelector('span').textContent = dark ? 'light_mode' : 'dark_mode';
+    toggleDarkModeBtn.setAttribute('aria-pressed', dark);
   });
 }
 
