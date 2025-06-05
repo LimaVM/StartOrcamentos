@@ -30,7 +30,6 @@ const menuClose = document.getElementById("menu-close");
 const sideMenu = document.querySelector(".side-menu");
 const overlay = document.getElementById("overlay");
 const menuItems = document.querySelectorAll(".menu-items li");
-const toggleDarkModeBtn = document.getElementById("toggle-dark-mode");
 const bottomNavItems = document.querySelectorAll(".bottom-nav-item");
 const pages = document.querySelectorAll(".page");
 const toast = document.getElementById("toast");
@@ -452,20 +451,6 @@ function initNavigation() {
 
   window.addEventListener("resize", updateLayout);
 
-  // Tema escuro
-  const prefDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const savedTheme = localStorage.getItem('darkMode');
-  if (savedTheme === 'true' || (savedTheme === null && prefDark)) {
-    document.body.classList.add('dark-mode');
-    toggleDarkModeBtn.querySelector('span').textContent = 'light_mode';
-    toggleDarkModeBtn.setAttribute('aria-pressed', 'true');
-  }
-  toggleDarkModeBtn.addEventListener('click', () => {
-    const dark = document.body.classList.toggle('dark-mode');
-    localStorage.setItem('darkMode', dark);
-    toggleDarkModeBtn.querySelector('span').textContent = dark ? 'light_mode' : 'dark_mode';
-    toggleDarkModeBtn.setAttribute('aria-pressed', dark);
-  });
 }
 
 function fecharMenu() {
