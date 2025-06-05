@@ -8,8 +8,8 @@
  * @version 1.0.0
  */
 
-// Nome do cache
-const CACHE_NAME = 'orcafacil-v1';
+const STATIC_CACHE = 'orcafacil-static-v1';
+const DATA_CACHE = 'orcafacil-data-v1';
 
 // Recursos para cache inicial
 const INITIAL_CACHE_URLS = [
@@ -40,7 +40,7 @@ self.addEventListener('install', event => {
 
   // Pré-cache de recursos estáticos
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches.open(STATIC_CACHE)
       .then(cache => {
         console.log('Cache aberto');
         return cache.addAll(INITIAL_CACHE_URLS);
@@ -55,7 +55,7 @@ self.addEventListener('install', event => {
 
 async function precacheApiData() {
   try {
-    const cache = await caches.open(CACHE_NAME);
+    const cache = await caches.open(DATA_CACHE);
     const [produtos, templates] = await Promise.all([
       fetch('/api/produtos'),
       fetch('/api/templates')
@@ -76,7 +76,7 @@ self.addEventListener('activate', event => {
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
+          if (cacheName !== STATIC_CACHE && cacheName !== DATA_CACHE) {
             console.log('Removendo cache antigo:', cacheName);
             return caches.delete(cacheName);
           }
@@ -102,7 +102,7 @@ self.addEventListener('fetch', event => {
         .then(response => {
           if (response && response.status === 200) {
             const resClone = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, resClone));
+            caches.open(DATA_CACHE).then(cache => cache.put(event.request, resClone));
           }
           return response;
         })
@@ -134,7 +134,7 @@ self.addEventListener('fetch', event => {
               
               // Armazena em cache a resposta
               let responseToCache = response.clone();
-              caches.open(CACHE_NAME)
+              caches.open(STATIC_CACHE)
                 .then(cache => {
                   cache.put(event.request, responseToCache);
                 });
@@ -155,7 +155,7 @@ self.addEventListener('fetch', event => {
           
           // Armazena em cache a resposta
           let responseToCache = response.clone();
-          caches.open(CACHE_NAME)
+          caches.open(STATIC_CACHE)
             .then(cache => {
               cache.put(event.request, responseToCache);
             });
@@ -167,6 +167,17 @@ self.addEventListener('fetch', event => {
         })
     );
   }
+});
+
+// Notificações push
+self.addEventListener('push', event => {
+  const data = event.data ? event.data.json() : { title: 'Notificação', body: 'Você tem uma nova mensagem.' };
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/images/icons/icon-192x192.png'
+    })
+  );
 });
 
 /**
