@@ -83,6 +83,9 @@
 
   <div class="info-cliente">
     <p><strong>Cliente:</strong> <%= orcamento.nomeCliente %></p>
+    <% if (orcamento.cpfCliente) { %>
+    <p><strong>CPF/CNPJ:</strong> <%= orcamento.cpfCliente %></p>
+    <% } %>
     <p><strong>Endereço:</strong> <%= orcamento.enderecoCliente %></p>
     <p><strong>Contato:</strong> <%= orcamento.telefoneCliente %> | <%= orcamento.emailCliente %></p>
     <p><strong>Orçamento Nº:</strong> <%= orcamento.id %></p>

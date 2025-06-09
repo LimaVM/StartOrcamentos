@@ -10,6 +10,7 @@ Um aplicativo web progressivo (PWA) moderno para criação e gerenciamento de or
 - Modelo de orçamento personalizável
 - Geração de PDF para download e compartilhamento
 - Funcionamento offline (consulta a produtos e templates mesmo sem conexão, sem cadastro de novos dados)
+- Preenchimento automático dos dados do cliente ao informar CNPJ ou CPF
 - Interface intuitiva e amigável
 - Sistema de login com usuários e permissões (admin pode gerenciar dados)
 

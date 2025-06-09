@@ -250,6 +250,43 @@ async function buscarCep() {
   }
 }
 
+async function buscarDocumento() {
+  const doc = clienteCpf.value.replace(/\D/g, '');
+  if (!navigator.onLine) return;
+  if (doc.length === 14) {
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${doc}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!clienteNome.value) {
+        clienteNome.value = data.razao_social || data.nome_fantasia || '';
+      }
+      if (!clienteCep.value) clienteCep.value = data.cep || '';
+      if (!clienteEndereco.value) {
+        const partes = [data.logradouro, data.numero, data.bairro, `${data.municipio || ''} - ${data.uf || ''}`];
+        clienteEndereco.value = partes.filter(Boolean).join(', ');
+      }
+      if (!clienteTelefone.value && data.ddd_telefone_1) {
+        clienteTelefone.value = data.ddd_telefone_1;
+      }
+      if (!clienteEmail.value && data.email) {
+        clienteEmail.value = data.email;
+      }
+    } catch (err) {
+      console.error('Erro ao buscar CNPJ', err);
+    }
+  } else if (doc.length === 11) {
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cpf/v1/${doc}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!clienteNome.value && data.nome) clienteNome.value = data.nome;
+    } catch (err) {
+      console.warn('Erro ao buscar CPF', err);
+    }
+  }
+}
+
 
 function atualizarEstadoBotaoProximo() {
   const tabAtual = document.querySelector(".tab-btn.active");
@@ -730,6 +767,7 @@ function initOrcamentoModal() {
   }
   if (clienteCpf) {
     clienteCpf.addEventListener('input', () => validarCpfCnpj());
+    clienteCpf.addEventListener('blur', buscarDocumento);
   }
   if (clienteCep) {
     clienteCep.addEventListener('blur', buscarCep);
