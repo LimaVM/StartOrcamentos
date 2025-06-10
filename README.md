@@ -11,6 +11,7 @@ Um aplicativo web progressivo (PWA) moderno para criação e gerenciamento de or
 - Geração de PDF para download e compartilhamento
 - Funcionamento offline (consulta a produtos e templates mesmo sem conexão, sem cadastro de novos dados)
 - Preenchimento automático dos dados do cliente ao informar CNPJ ou CPF
+- Formatação automática do campo de CPF ou CNPJ enquanto você digita
 - Interface intuitiva e amigável
 - Sistema de login com usuários e permissões (admin pode gerenciar dados)
 

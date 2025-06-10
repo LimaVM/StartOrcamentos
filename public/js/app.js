@@ -135,6 +135,7 @@ const clienteEndereco = document.getElementById("cliente-endereco");
 const clienteTelefone = document.getElementById("cliente-telefone");
 const clienteEmail = document.getElementById("cliente-email");
 const clienteCpf = document.getElementById("cliente-cpf");
+const clienteCpfLabel = document.querySelector('label[for="cliente-cpf"]');
 const produtosSelecionadosEl = document.getElementById("produtos-selecionados");
 const addProdutosBtn = document.getElementById("add-produtos-btn");
 const orcamentoObservacoes = document.getElementById("orcamento-observacoes");
@@ -171,6 +172,44 @@ function validarTelefone(marcar = true) {
     grupo.classList.remove('error');
   }
   return valido;
+}
+
+function formatarCpfCnpjInput() {
+  let digits = clienteCpf.value.replace(/\D/g, '');
+  if (!digits) {
+    if (clienteCpfLabel) clienteCpfLabel.textContent = 'CPF/CNPJ';
+    clienteCpf.value = '';
+    return;
+  }
+  if (digits.length > 14) digits = digits.slice(0, 14);
+
+  if (digits.length <= 11) {
+    if (clienteCpfLabel) clienteCpfLabel.textContent = 'CPF';
+    digits = digits.slice(0, 11);
+    let formatted = digits;
+    if (digits.length > 9) {
+      formatted = digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    } else if (digits.length > 6) {
+      formatted = digits.replace(/(\d{3})(\d{3})(\d+)/, '$1.$2.$3');
+    } else if (digits.length > 3) {
+      formatted = digits.replace(/(\d{3})(\d+)/, '$1.$2');
+    }
+    clienteCpf.value = formatted;
+  } else {
+    if (clienteCpfLabel) clienteCpfLabel.textContent = 'CNPJ';
+    digits = digits.slice(0, 14);
+    let formatted = digits;
+    if (digits.length > 12) {
+      formatted = digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    } else if (digits.length > 8) {
+      formatted = digits.replace(/(\d{2})(\d{3})(\d{3})(\d+)/, '$1.$2.$3/$4');
+    } else if (digits.length > 5) {
+      formatted = digits.replace(/(\d{2})(\d{3})(\d+)/, '$1.$2.$3');
+    } else if (digits.length > 2) {
+      formatted = digits.replace(/(\d{2})(\d+)/, '$1.$2');
+    }
+    clienteCpf.value = formatted;
+  }
 }
 
 function validarCpfCnpj(marcar = true) {
@@ -766,7 +805,10 @@ function initOrcamentoModal() {
     clienteTelefone.addEventListener('input', () => validarTelefone());
   }
   if (clienteCpf) {
-    clienteCpf.addEventListener('input', () => validarCpfCnpj());
+    clienteCpf.addEventListener('input', () => {
+      formatarCpfCnpjInput();
+      validarCpfCnpj(false);
+    });
     clienteCpf.addEventListener('blur', buscarDocumento);
   }
   if (clienteCep) {
@@ -1356,6 +1398,7 @@ function abrirModalOrcamento() {
   prazoJurosInput.value = 0;
   orcamentoIdInput.value = "";
   clienteCpf.value = "";
+  formatarCpfCnpjInput();
   clienteCep.value = "";
   orcamentoModal.classList.add("active");
   setCurrentForm(orcamentoForm);
@@ -1380,6 +1423,7 @@ async function abrirModalEditarOrcamento(id) {
     clienteTelefone.value = orc.telefoneCliente || "";
     clienteEmail.value = orc.emailCliente || "";
     clienteCpf.value = orc.cpfCliente || "";
+    formatarCpfCnpjInput();
     orcamentoObservacoes.value = orc.observacoes || "";
     formaPagamentoSelect.value = orc.formaPagamento || "avista";
     if (formaPagamentoSelect.value === "avista") {
