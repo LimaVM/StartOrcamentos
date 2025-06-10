@@ -7,9 +7,12 @@ Um aplicativo web progressivo (PWA) moderno para criação e gerenciamento de or
 - Design moderno e responsivo para qualquer dispositivo
 - Cadastro de produtos com imagens
 - Criação de orçamentos personalizados
-- Múltiplos templates de orçamento
+- Modelo de orçamento personalizável
 - Geração de PDF para download e compartilhamento
 - Funcionamento offline (consulta a produtos e templates mesmo sem conexão, sem cadastro de novos dados)
+- Preenchimento automático dos dados do cliente ao informar CNPJ
+- Validação de CPF no próprio navegador
+- Formatação automática do campo de CPF ou CNPJ enquanto você digita
 - Interface intuitiva e amigável
 - Sistema de login com usuários e permissões (admin pode gerenciar dados)
 

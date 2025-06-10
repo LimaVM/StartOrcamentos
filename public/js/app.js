@@ -21,6 +21,7 @@ let currentForm = null;
 let formSnapshot = "";
 let currentPage = "home"; // Página atual para controle do histórico
 let usuarioAtual = null; // Dados do usuário logado
+let offlineQueue = [];
 
 // Elementos DOM frequentemente acessados
 const appContent = document.getElementById("app-content");
@@ -57,6 +58,7 @@ const cardPerfil = document.getElementById("card-perfil");
 // Elementos da página de produtos
 const addProdutoBtn = document.getElementById("add-produto-btn");
 const produtoSearch = document.getElementById("produto-search");
+const produtoSugestoes = document.getElementById("sugestoes-produtos");
 const produtosLista = document.getElementById("produtos-lista");
 
 // Elementos da página de orçamentos
@@ -108,8 +110,15 @@ function atualizarDisponibilidadeOnline() {
   if (addProdutoBtn) addProdutoBtn.disabled = !online;
 }
 
-window.addEventListener('online', atualizarDisponibilidadeOnline);
-window.addEventListener('offline', atualizarDisponibilidadeOnline);
+window.addEventListener('online', () => {
+  atualizarDisponibilidadeOnline();
+  processarFilaOffline();
+  mostrarToast('Conectado');
+});
+window.addEventListener('offline', () => {
+  atualizarDisponibilidadeOnline();
+  mostrarToast('Você está offline');
+});
 
 // Elementos do modal de orçamento
 const orcamentoModal = document.getElementById("orcamento-modal");
@@ -126,6 +135,7 @@ const clienteEndereco = document.getElementById("cliente-endereco");
 const clienteTelefone = document.getElementById("cliente-telefone");
 const clienteEmail = document.getElementById("cliente-email");
 const clienteCpf = document.getElementById("cliente-cpf");
+const clienteCpfLabel = document.querySelector('label[for="cliente-cpf"]');
 const produtosSelecionadosEl = document.getElementById("produtos-selecionados");
 const addProdutosBtn = document.getElementById("add-produtos-btn");
 const orcamentoObservacoes = document.getElementById("orcamento-observacoes");
@@ -134,6 +144,32 @@ const valorDescontoGroup = document.getElementById("valor-desconto-group");
 const valorDescontoInput = document.getElementById("valor-desconto");
 const valorDescontoHelper = document.getElementById("valor-desconto-helper");
 const templatesLista = document.getElementById("templates-lista");
+const formaPagamentoSelect = document.getElementById("forma-pagamento");
+const avistaGrupo = document.getElementById("avista-grupo");
+const avistaTipoSelect = document.getElementById("avista-tipo");
+const prazoGrupo = document.getElementById("prazo-grupo");
+const prazoParcelasInput = document.getElementById("prazo-parcelas");
+const prazoJurosInput = document.getElementById("prazo-juros");
+
+function habilitarEnterParaAvancar(form) {
+  const campos = Array.from(form.querySelectorAll('input, select, textarea'));
+  campos.forEach((campo) => {
+    campo.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const visiveis = campos.filter(el => el.offsetParent !== null);
+        const idx = visiveis.indexOf(e.target);
+        if (idx !== -1 && idx < visiveis.length - 1) {
+          visiveis[idx + 1].focus();
+        } else if (nextTabBtn && nextTabBtn.style.display !== 'none') {
+          navegarProximaTab();
+        } else if (submitOrcamentoBtn && submitOrcamentoBtn.style.display !== 'none') {
+          submitOrcamentoBtn.click();
+        }
+      }
+    });
+  });
+}
 
 function validarClienteNome(marcar = true) {
   const grupo = clienteNome.closest(".form-group");
@@ -156,6 +192,44 @@ function validarTelefone(marcar = true) {
     grupo.classList.remove('error');
   }
   return valido;
+}
+
+function formatarCpfCnpjInput() {
+  let digits = clienteCpf.value.replace(/\D/g, '');
+  if (!digits) {
+    if (clienteCpfLabel) clienteCpfLabel.textContent = 'CPF/CNPJ';
+    clienteCpf.value = '';
+    return;
+  }
+  if (digits.length > 14) digits = digits.slice(0, 14);
+
+  if (digits.length <= 11) {
+    if (clienteCpfLabel) clienteCpfLabel.textContent = 'CPF';
+    digits = digits.slice(0, 11);
+    let formatted = digits;
+    if (digits.length > 9) {
+      formatted = digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    } else if (digits.length > 6) {
+      formatted = digits.replace(/(\d{3})(\d{3})(\d+)/, '$1.$2.$3');
+    } else if (digits.length > 3) {
+      formatted = digits.replace(/(\d{3})(\d+)/, '$1.$2');
+    }
+    clienteCpf.value = formatted;
+  } else {
+    if (clienteCpfLabel) clienteCpfLabel.textContent = 'CNPJ';
+    digits = digits.slice(0, 14);
+    let formatted = digits;
+    if (digits.length > 12) {
+      formatted = digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    } else if (digits.length > 8) {
+      formatted = digits.replace(/(\d{2})(\d{3})(\d{3})(\d+)/, '$1.$2.$3/$4');
+    } else if (digits.length > 5) {
+      formatted = digits.replace(/(\d{2})(\d{3})(\d+)/, '$1.$2.$3');
+    } else if (digits.length > 2) {
+      formatted = digits.replace(/(\d{2})(\d+)/, '$1.$2');
+    }
+    clienteCpf.value = formatted;
+  }
 }
 
 function validarCpfCnpj(marcar = true) {
@@ -235,6 +309,38 @@ async function buscarCep() {
   }
 }
 
+async function buscarDocumento() {
+  const doc = clienteCpf.value.replace(/\D/g, '');
+  if (doc.length === 11) {
+    const valido = validarCPF(doc);
+    const grupo = clienteCpf.closest('.form-group');
+    if (grupo) grupo.classList.toggle('error', !valido);
+    if (!valido) mostrarToast('CPF inválido');
+  } else if (navigator.onLine && doc.length === 14) {
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${doc}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!clienteNome.value) {
+        clienteNome.value = data.razao_social || data.nome_fantasia || '';
+      }
+      if (!clienteCep.value) clienteCep.value = data.cep || '';
+      if (!clienteEndereco.value) {
+        const partes = [data.logradouro, data.numero, data.bairro, `${data.municipio || ''} - ${data.uf || ''}`];
+        clienteEndereco.value = partes.filter(Boolean).join(', ');
+      }
+      if (!clienteTelefone.value && data.ddd_telefone_1) {
+        clienteTelefone.value = data.ddd_telefone_1;
+      }
+      if (!clienteEmail.value && data.email) {
+        clienteEmail.value = data.email;
+      }
+    } catch (err) {
+      console.error('Erro ao buscar CNPJ', err);
+    }
+  }
+}
+
 
 function atualizarEstadoBotaoProximo() {
   const tabAtual = document.querySelector(".tab-btn.active");
@@ -289,21 +395,38 @@ async function verificarSessao() {
     const data = await res.json();
     if (data.autenticado) {
       usuarioAtual = data.usuario;
+      localStorage.setItem('usuarioAtual', JSON.stringify(usuarioAtual));
       iniciarAplicacao();
       configurarMenuAdmin();
       loginModal.classList.remove('active');
     } else {
-      loginModal.classList.add('active');
-      if (loginForm) {
-        loginForm.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          await realizarLogin();
-        });
+      const stored = localStorage.getItem('usuarioAtual');
+      if (stored) {
+        usuarioAtual = JSON.parse(stored);
+        iniciarAplicacao();
+        configurarMenuAdmin();
+        loginModal.classList.remove('active');
+      } else {
+        loginModal.classList.add('active');
+        if (loginForm) {
+          loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await realizarLogin();
+          });
+        }
       }
     }
   } catch (e) {
-    console.error('Falha ao verificar sessão', e);
-    loginModal.classList.add('active');
+    const stored = localStorage.getItem('usuarioAtual');
+    if (stored) {
+      usuarioAtual = JSON.parse(stored);
+      iniciarAplicacao();
+      configurarMenuAdmin();
+      loginModal.classList.remove('active');
+    } else {
+      console.error('Falha ao verificar sessão', e);
+      loginModal.classList.add('active');
+    }
   }
 }
 
@@ -316,6 +439,7 @@ async function realizarLogin() {
     });
     if (res.ok) {
       usuarioAtual = await res.json();
+      localStorage.setItem('usuarioAtual', JSON.stringify(usuarioAtual));
       configurarMenuAdmin();
       loginModal.classList.remove('active');
       iniciarAplicacao();
@@ -341,6 +465,9 @@ function iniciarAplicacao() {
   initPerfilPage();
   carregarDadosIniciais();
   initInstallPrompt();
+  if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission();
+  }
 
 }
 
@@ -349,7 +476,13 @@ function iniciarAplicacao() {
  */
 document.addEventListener("DOMContentLoaded", () => {
   updateLayout();
+  carregarFilaOffline();
   atualizarDisponibilidadeOnline();
+  if (!navigator.onLine) {
+    mostrarToast('Você está no modo offline');
+  } else {
+    processarFilaOffline();
+  }
   verificarSessao();
 });
 
@@ -408,6 +541,7 @@ function initNavigation() {
   });
 
   window.addEventListener("resize", updateLayout);
+
 }
 
 function fecharMenu() {
@@ -498,6 +632,14 @@ function initProdutosPage() {
   produtoSearch.addEventListener("input", () => {
     const termo = produtoSearch.value.toLowerCase();
     filtrarProdutos(termo);
+    if (produtoSugestoes) {
+      const sugestoes = produtosCache
+        .filter(p => p.nome.toLowerCase().includes(termo))
+        .slice(0, 5)
+        .map(p => `<option value="${p.nome}">`)
+        .join('');
+      produtoSugestoes.innerHTML = sugestoes;
+    }
   });
 }
 
@@ -524,6 +666,17 @@ function initPerfilPage() {
         perfilFotoPreview.src = ev.target.result;
       };
       reader.readAsDataURL(e.target.files[0]);
+
+      const formData = new FormData();
+      formData.append('foto', e.target.files[0]);
+      fetch('/api/usuarios/me', { method: 'PUT', body: formData })
+        .then(res => res.ok ? res.json() : Promise.reject())
+        .then(user => {
+          usuarioAtual = { ...usuarioAtual, ...user };
+          localStorage.setItem('usuarioAtual', JSON.stringify(usuarioAtual));
+          mostrarToast('Foto atualizada');
+        })
+        .catch(() => mostrarToast('Erro ao atualizar foto'));
     }
   });
   perfilForm.addEventListener('submit', async (e) => {
@@ -551,6 +704,7 @@ function initPerfilPage() {
   logoutBtn?.addEventListener('click', async () => {
     await fetch('/api/logout', { method: 'POST' });
     usuarioAtual = null;
+    localStorage.removeItem('usuarioAtual');
     loginModal.classList.add('active');
   });
   carregarPerfil();
@@ -561,6 +715,8 @@ function initPerfilPage() {
  */
 function initProdutoModal() {
   selectFotoBtn.addEventListener("click", () => produtoFotoInput.click());
+
+  habilitarEnterParaAvancar(produtoForm);
 
   produtoForm.addEventListener("input", markFormChanged);
   produtoForm.addEventListener("change", markFormChanged);
@@ -583,7 +739,29 @@ function initProdutoModal() {
   produtoForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (!navigator.onLine) {
-      mostrarToast('Função indisponível offline');
+      const dados = { nome: produtoNome.value, descricao: produtoDescricao.value, valor: produtoValor.value };
+      if (produtoFotoInput.files && produtoFotoInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          dados.foto = reader.result;
+          offlineQueue.push({ tipo: 'addProduto', dados });
+          salvarFilaOffline();
+          const tempId = 'off-' + Date.now();
+          produtosCache.push({ id: tempId, ...dados });
+          renderizarProdutos();
+          produtoModal.classList.remove("active");
+          mostrarToast('Produto salvo offline');
+        };
+        reader.readAsDataURL(produtoFotoInput.files[0]);
+      } else {
+        offlineQueue.push({ tipo: 'addProduto', dados });
+        salvarFilaOffline();
+        const tempId = 'off-' + Date.now();
+        produtosCache.push({ id: tempId, ...dados });
+        renderizarProdutos();
+        produtoModal.classList.remove("active");
+        mostrarToast('Produto salvo offline');
+      }
       return;
     }
     mostrarLoading();
@@ -632,6 +810,7 @@ function initOrcamentoModal() {
       ativarTab(tab);
     });
   });
+  habilitarEnterParaAvancar(orcamentoForm);
   prevTabBtn.addEventListener("click", navegarTabAnterior);
   nextTabBtn.addEventListener("click", navegarProximaTab);
   orcamentoForm.addEventListener("input", markFormChanged);
@@ -644,12 +823,27 @@ function initOrcamentoModal() {
     clienteTelefone.addEventListener('input', () => validarTelefone());
   }
   if (clienteCpf) {
-    clienteCpf.addEventListener('input', () => validarCpfCnpj());
+    clienteCpf.addEventListener('input', () => {
+      formatarCpfCnpjInput();
+      validarCpfCnpj(false);
+    });
+    clienteCpf.addEventListener('blur', buscarDocumento);
   }
   if (clienteCep) {
     clienteCep.addEventListener('blur', buscarCep);
   }
   addProdutosBtn.addEventListener("click", abrirModalSelecionarProdutos);
+
+  formaPagamentoSelect.addEventListener("change", () => {
+    const fp = formaPagamentoSelect.value;
+    if (fp === "avista") {
+      avistaGrupo.style.display = "block";
+      prazoGrupo.style.display = "none";
+    } else {
+      avistaGrupo.style.display = "none";
+      prazoGrupo.style.display = "block";
+    }
+  });
 
   tipoDescontoSelect.addEventListener("change", () => {
     const tipo = tipoDescontoSelect.value;
@@ -667,7 +861,43 @@ function initOrcamentoModal() {
   orcamentoForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (!navigator.onLine) {
-      mostrarToast('Função indisponível offline');
+      if (!validarClienteNome() || !validarTelefone() || !validarCpfCnpj() || produtosSelecionados.length === 0) {
+        mostrarToast('Preencha todos os dados obrigatórios');
+        return;
+      }
+      const templateSelecionado = document.querySelector(".template-item.selected");
+      if (!templateSelecionado) {
+        mostrarToast("Selecione um template");
+        return;
+      }
+      if (valorDescontoInput.required && !valorDescontoInput.value) {
+        mostrarToast("Preencha o valor do desconto");
+        return;
+      }
+      const dadosOrcamento = {
+        nomeCliente: clienteNome.value,
+        cepCliente: clienteCep.value,
+        enderecoCliente: clienteEndereco.value,
+        telefoneCliente: clienteTelefone.value,
+        emailCliente: clienteEmail.value,
+        cpfCliente: clienteCpf.value,
+        templateId: templateSelecionado.getAttribute("data-id"),
+        produtos: produtosSelecionados.map(p => ({ id: p.id, quantidade: p.quantidade })),
+        observacoes: orcamentoObservacoes.value,
+        tipoDesconto: tipoDescontoSelect.value === "nenhum" ? null : tipoDescontoSelect.value,
+        valorDesconto: valorDescontoInput.value || 0,
+        formaPagamento: formaPagamentoSelect.value,
+        avistaTipo: avistaTipoSelect.value,
+        parcelas: parseInt(prazoParcelasInput.value, 10) || 1,
+        jurosMes: parseFloat(prazoJurosInput.value) || 0,
+      };
+      offlineQueue.push({ tipo: 'addOrcamento', dados: dadosOrcamento });
+      salvarFilaOffline();
+      const tempId = 'off-' + Date.now();
+      orcamentosCache.push({ id: tempId, nomeCliente: dadosOrcamento.nomeCliente, valorTotal: 0, dataCriacao: new Date().toISOString() });
+      renderizarOrcamentos();
+      orcamentoModal.classList.remove("active");
+      mostrarToast('Orçamento salvo offline');
       return;
     }
     if (!validarClienteNome()) {
@@ -720,6 +950,10 @@ function initOrcamentoModal() {
         observacoes: orcamentoObservacoes.value,
         tipoDesconto: tipoDescontoSelect.value === "nenhum" ? null : tipoDescontoSelect.value,
         valorDesconto: valorDescontoInput.value || 0,
+        formaPagamento: formaPagamentoSelect.value,
+        avistaTipo: avistaTipoSelect.value,
+        parcelas: parseInt(prazoParcelasInput.value, 10) || 1,
+        jurosMes: parseFloat(prazoJurosInput.value) || 0,
       };
 
       const orcId = orcamentoIdInput.value;
@@ -813,6 +1047,19 @@ function initVisualizarOrcamentoModal() {
 // --- Funções de Carregamento de Dados --- //
 
 async function carregarProdutos() {
+  if (produtosLista) {
+    produtosLista.innerHTML = Array.from({ length: 3 })
+      .map(() => `
+        <div class="item-card">
+          <div class="skeleton skeleton-image"></div>
+          <div class="item-details" style="width:100%">
+            <div class="skeleton skeleton-text" style="width:60%"></div>
+            <div class="skeleton skeleton-text" style="width:40%"></div>
+          </div>
+        </div>
+      `)
+      .join("");
+  }
   try {
     const response = await fetch("/api/produtos");
     if (!response.ok) throw new Error("Erro ao buscar produtos");
@@ -840,6 +1087,18 @@ async function carregarTemplates() {
 }
 
 async function carregarOrcamentos() {
+  if (orcamentosLista) {
+    orcamentosLista.innerHTML = Array.from({ length: 3 })
+      .map(() => `
+        <div class="item-card">
+          <div class="item-details" style="width:100%">
+            <div class="skeleton skeleton-text" style="width:70%"></div>
+            <div class="skeleton skeleton-text" style="width:50%"></div>
+          </div>
+        </div>
+      `)
+      .join("");
+  }
   try {
     const response = await fetch("/api/orcamentos");
     if (!response.ok) throw new Error("Erro ao buscar orçamentos");
@@ -970,6 +1229,7 @@ function renderizarOrcamentos() {
       e.stopPropagation();
     });
   });
+
 
   orcamentosLista.querySelectorAll(".delete-orcamento").forEach((btn) => {
     btn.addEventListener("click", (e) => {
@@ -1148,8 +1408,15 @@ function abrirModalOrcamento() {
   valorDescontoGroup.style.display = "none";
   valorDescontoInput.value = "";
   valorDescontoInput.required = false;
+  formaPagamentoSelect.value = "avista";
+  avistaGrupo.style.display = "block";
+  prazoGrupo.style.display = "none";
+  avistaTipoSelect.value = "dinheiro";
+  prazoParcelasInput.value = 1;
+  prazoJurosInput.value = 0;
   orcamentoIdInput.value = "";
   clienteCpf.value = "";
+  formatarCpfCnpjInput();
   clienteCep.value = "";
   orcamentoModal.classList.add("active");
   setCurrentForm(orcamentoForm);
@@ -1174,7 +1441,21 @@ async function abrirModalEditarOrcamento(id) {
     clienteTelefone.value = orc.telefoneCliente || "";
     clienteEmail.value = orc.emailCliente || "";
     clienteCpf.value = orc.cpfCliente || "";
+    formatarCpfCnpjInput();
     orcamentoObservacoes.value = orc.observacoes || "";
+    formaPagamentoSelect.value = orc.formaPagamento || "avista";
+    if (formaPagamentoSelect.value === "avista") {
+      avistaGrupo.style.display = "block";
+      prazoGrupo.style.display = "none";
+      avistaTipoSelect.value = orc.avistaTipo || "dinheiro";
+      prazoParcelasInput.value = 1;
+      prazoJurosInput.value = 0;
+    } else {
+      avistaGrupo.style.display = "none";
+      prazoGrupo.style.display = "block";
+      prazoParcelasInput.value = orc.parcelas || 1;
+      prazoJurosInput.value = orc.jurosMes || 0;
+    }
     tipoDescontoSelect.value = orc.tipoDesconto || "nenhum";
     if (orc.tipoDesconto && orc.valorDescontoInput) {
       valorDescontoInput.value = orc.valorDescontoInput;
@@ -1295,6 +1576,7 @@ async function excluirOrcamento(id) {
     esconderLoading();
   }
 }
+
 
 function atualizarQuantidadeProdutoSelecionado(produtoId, quantidade, cardElement = null) {
     const index = produtosSelecionados.findIndex(p => p.id === produtoId);
@@ -1574,6 +1856,55 @@ function markFormChanged() {
   }
 }
 
+function carregarFilaOffline() {
+  offlineQueue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
+}
+
+function salvarFilaOffline() {
+  localStorage.setItem('offlineQueue', JSON.stringify(offlineQueue));
+}
+
+async function processarFilaOffline() {
+  if (offlineQueue.length === 0 || !navigator.onLine) return;
+  mostrarToast('Sincronizando ações offline...');
+  const fila = [...offlineQueue];
+  offlineQueue = [];
+  salvarFilaOffline();
+  for (const acao of fila) {
+    try {
+      if (acao.tipo === 'addProduto') {
+        const fd = new FormData();
+        fd.append('nome', acao.dados.nome);
+        fd.append('descricao', acao.dados.descricao || '');
+        fd.append('valor', acao.dados.valor);
+        if (acao.dados.foto) {
+          const blob = await (await fetch(acao.dados.foto)).blob();
+          fd.append('foto', new File([blob], 'foto.png', { type: blob.type }));
+        }
+        const res = await fetch('/api/produtos', { method: 'POST', body: fd });
+        if (!res.ok) throw new Error('Falha ao enviar produto');
+      } else if (acao.tipo === 'addOrcamento') {
+        const res = await fetch('/api/orcamentos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(acao.dados),
+        });
+        if (!res.ok) throw new Error('Falha ao enviar orçamento');
+      }
+    } catch (err) {
+      console.error('Erro ao sincronizar ação offline', err);
+      offlineQueue.push(acao);
+    }
+  }
+  salvarFilaOffline();
+  if (offlineQueue.length === 0) {
+    mostrarToast('Sincronização concluída');
+    await carregarDadosIniciais();
+  } else {
+    mostrarToast('Algumas ações não foram sincronizadas');
+  }
+}
+
 function mostrarConfirmacao(mensagem) {
   return new Promise((resolve) => {
     if (!confirmModal) return resolve(true);
@@ -1657,6 +1988,7 @@ function abrirModalUsuario(usuario = null) {
 
 usuarioForm?.addEventListener('input', markFormChanged);
 usuarioForm?.addEventListener('change', markFormChanged);
+if (usuarioForm) habilitarEnterParaAvancar(usuarioForm);
 
 usuarioForm?.addEventListener('submit', async (e) => {
   e.preventDefault();

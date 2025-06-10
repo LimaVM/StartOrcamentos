@@ -237,6 +237,7 @@ input::placeholder, textarea::placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-left: 0.25rem;
   transition: background-color var(--transition-fast);
 }
 
@@ -548,6 +549,7 @@ input::placeholder, textarea::placeholder {
   font-size: 1.125rem;
   font-weight: 600;
   margin-bottom: var(--space-xs);
+  word-break: break-word;
 }
 
 .item-subtitle {
@@ -706,7 +708,8 @@ input::placeholder, textarea::placeholder {
   background-color: var(--background-color);
   border-radius: var(--border-radius-xl);
   box-shadow: var(--shadow-xl);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   transform: scale(0.9);
   opacity: 0;
   transition: transform var(--transition-normal), opacity var(--transition-normal);
@@ -822,6 +825,13 @@ input::placeholder, textarea::placeholder {
   border-top: 1px solid var(--border-light);
   gap: var(--space-sm);
   flex-shrink: 0;
+}
+#visualizar-orcamento-modal .form-actions {
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+#visualizar-orcamento-modal .form-actions button {
+  flex: 1 1 auto;
 }
 
 /* Botões */
@@ -1057,6 +1067,7 @@ button:disabled,
   flex: 1;
   padding: 0 var(--space-sm);
   font-weight: 500;
+  word-break: break-word;
 }
 
 .selected-item .item-image-small {
