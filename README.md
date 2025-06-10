@@ -13,6 +13,7 @@ Um aplicativo web progressivo (PWA) moderno para criação e gerenciamento de or
 - Preenchimento automático dos dados do cliente ao informar CNPJ
 - Validação de CPF no próprio navegador
 - Formatação automática do campo de CPF ou CNPJ enquanto você digita
+- Campo de CPF/CNPJ logo abaixo do nome do cliente para agilizar o cadastro
 - Interface intuitiva e amigável
 - Sistema de login com usuários e permissões (admin pode gerenciar dados)
 
