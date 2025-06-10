@@ -291,8 +291,12 @@ async function buscarCep() {
 
 async function buscarDocumento() {
   const doc = clienteCpf.value.replace(/\D/g, '');
-  if (!navigator.onLine) return;
-  if (doc.length === 14) {
+  if (doc.length === 11) {
+    const valido = validarCPF(doc);
+    const grupo = clienteCpf.closest('.form-group');
+    if (grupo) grupo.classList.toggle('error', !valido);
+    if (!valido) mostrarToast('CPF inválido');
+  } else if (navigator.onLine && doc.length === 14) {
     try {
       const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${doc}`);
       if (!res.ok) return;
@@ -313,15 +317,6 @@ async function buscarDocumento() {
       }
     } catch (err) {
       console.error('Erro ao buscar CNPJ', err);
-    }
-  } else if (doc.length === 11) {
-    try {
-      const res = await fetch(`https://brasilapi.com.br/api/cpf/v1/${doc}`);
-      if (!res.ok) return;
-      const data = await res.json();
-      if (!clienteNome.value && data.nome) clienteNome.value = data.nome;
-    } catch (err) {
-      console.warn('Erro ao buscar CPF', err);
     }
   }
 }
