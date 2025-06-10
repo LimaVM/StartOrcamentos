@@ -151,6 +151,26 @@ const prazoGrupo = document.getElementById("prazo-grupo");
 const prazoParcelasInput = document.getElementById("prazo-parcelas");
 const prazoJurosInput = document.getElementById("prazo-juros");
 
+function habilitarEnterParaAvancar(form) {
+  const campos = Array.from(form.querySelectorAll('input, select, textarea'));
+  campos.forEach((campo) => {
+    campo.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const visiveis = campos.filter(el => el.offsetParent !== null);
+        const idx = visiveis.indexOf(e.target);
+        if (idx !== -1 && idx < visiveis.length - 1) {
+          visiveis[idx + 1].focus();
+        } else if (nextTabBtn && nextTabBtn.style.display !== 'none') {
+          navegarProximaTab();
+        } else if (submitOrcamentoBtn && submitOrcamentoBtn.style.display !== 'none') {
+          submitOrcamentoBtn.click();
+        }
+      }
+    });
+  });
+}
+
 function validarClienteNome(marcar = true) {
   const grupo = clienteNome.closest(".form-group");
   const valido = clienteNome.value.trim() !== "";
@@ -696,6 +716,8 @@ function initPerfilPage() {
 function initProdutoModal() {
   selectFotoBtn.addEventListener("click", () => produtoFotoInput.click());
 
+  habilitarEnterParaAvancar(produtoForm);
+
   produtoForm.addEventListener("input", markFormChanged);
   produtoForm.addEventListener("change", markFormChanged);
 
@@ -788,6 +810,7 @@ function initOrcamentoModal() {
       ativarTab(tab);
     });
   });
+  habilitarEnterParaAvancar(orcamentoForm);
   prevTabBtn.addEventListener("click", navegarTabAnterior);
   nextTabBtn.addEventListener("click", navegarProximaTab);
   orcamentoForm.addEventListener("input", markFormChanged);
@@ -1965,6 +1988,7 @@ function abrirModalUsuario(usuario = null) {
 
 usuarioForm?.addEventListener('input', markFormChanged);
 usuarioForm?.addEventListener('change', markFormChanged);
+if (usuarioForm) habilitarEnterParaAvancar(usuarioForm);
 
 usuarioForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
